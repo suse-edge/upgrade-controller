@@ -27,7 +27,7 @@ import (
 	"github.com/suse-edge/edge-upgrade-controller/test/utils"
 )
 
-const namespace = "edge-upgrade-controller-fork-system"
+const namespace = "edge-upgrade-controller-system"
 
 var _ = Describe("controller", Ordered, func() {
 	BeforeAll(func() {
@@ -60,7 +60,7 @@ var _ = Describe("controller", Ordered, func() {
 			var err error
 
 			// projectimage stores the name of the image used in the example
-			var projectimage = "example.com/edge-upgrade-controller-fork:v0.0.1"
+			var projectimage = "example.com/edge-upgrade-controller:v0.0.1"
 
 			By("building the manager(Operator) image")
 			cmd := exec.Command("make", "docker-build", fmt.Sprintf("IMG=%s", projectimage))

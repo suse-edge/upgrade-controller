@@ -5,7 +5,7 @@
 domain: edge.suse.com
 layout:
 - go.kubebuilder.io/v4
-projectName: edge-upgrade-controller-fork
+projectName: edge-upgrade-controller
 repo: github.com/suse-edge/edge-upgrade-controller
 resources:
 - api:
