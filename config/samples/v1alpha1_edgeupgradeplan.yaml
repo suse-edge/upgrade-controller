@@ -1,0 +1,9 @@
+apiVersion: edge.suse.com/v1alpha1
+kind: EdgeUpgradePlan
+metadata:
+  labels:
+    app.kubernetes.io/name: edge-upgrade-controller-fork
+    app.kubernetes.io/managed-by: kustomize
+  name: edgeupgradeplan-sample
+spec:
+  # TODO(user): Add fields here
