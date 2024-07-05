@@ -8,7 +8,7 @@ metadata:
   name: edgeupgradeplan-viewer-role
 rules:
 - apiGroups:
-  - edge.suse.com
+  - lifecycle.edge.suse.com
   resources:
   - edgeupgradeplans
   verbs:
@@ -16,7 +16,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - edge.suse.com
+  - lifecycle.edge.suse.com
   resources:
   - edgeupgradeplans/status
   verbs:

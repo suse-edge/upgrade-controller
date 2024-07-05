@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	edgesusecomv1alpha1 "github.com/suse-edge/edge-upgrade-controller/api/v1alpha1"
+	lifecyclev1alpha1 "github.com/suse-edge/edge-upgrade-controller/api/v1alpha1"
 )
 
 // EdgeUpgradePlanReconciler reconciles a EdgeUpgradePlan object
@@ -33,9 +33,9 @@ type EdgeUpgradePlanReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=edge.suse.com,resources=edgeupgradeplans,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=edge.suse.com,resources=edgeupgradeplans/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=edge.suse.com,resources=edgeupgradeplans/finalizers,verbs=update
+// +kubebuilder:rbac:groups=lifecycle.edge.suse.com,resources=edgeupgradeplans,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=lifecycle.edge.suse.com,resources=edgeupgradeplans/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=lifecycle.edge.suse.com,resources=edgeupgradeplans/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -57,6 +57,6 @@ func (r *EdgeUpgradePlanReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 // SetupWithManager sets up the controller with the Manager.
 func (r *EdgeUpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&edgesusecomv1alpha1.EdgeUpgradePlan{}).
+		For(&lifecyclev1alpha1.EdgeUpgradePlan{}).
 		Complete(r)
 }

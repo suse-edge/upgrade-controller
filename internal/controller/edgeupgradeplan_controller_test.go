@@ -27,7 +27,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	edgesusecomv1alpha1 "github.com/suse-edge/edge-upgrade-controller/api/v1alpha1"
+	lifecyclev1alpha1 "github.com/suse-edge/edge-upgrade-controller/api/v1alpha1"
 )
 
 var _ = Describe("EdgeUpgradePlan Controller", func() {
@@ -40,13 +40,13 @@ var _ = Describe("EdgeUpgradePlan Controller", func() {
 			Name:      resourceName,
 			Namespace: "default", // TODO(user):Modify as needed
 		}
-		edgeupgradeplan := &edgesusecomv1alpha1.EdgeUpgradePlan{}
+		edgeupgradeplan := &lifecyclev1alpha1.EdgeUpgradePlan{}
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind EdgeUpgradePlan")
 			err := k8sClient.Get(ctx, typeNamespacedName, edgeupgradeplan)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &edgesusecomv1alpha1.EdgeUpgradePlan{
+				resource := &lifecyclev1alpha1.EdgeUpgradePlan{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
@@ -59,7 +59,7 @@ var _ = Describe("EdgeUpgradePlan Controller", func() {
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &edgesusecomv1alpha1.EdgeUpgradePlan{}
+			resource := &lifecyclev1alpha1.EdgeUpgradePlan{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 

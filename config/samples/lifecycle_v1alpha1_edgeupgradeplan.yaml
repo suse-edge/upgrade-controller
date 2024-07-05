@@ -1,4 +1,4 @@
-apiVersion: edge.suse.com/v1alpha1
+apiVersion: lifecycle.edge.suse.com/v1alpha1
 kind: EdgeUpgradePlan
 metadata:
   labels:

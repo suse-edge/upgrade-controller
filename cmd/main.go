@@ -34,7 +34,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	edgesusecomv1alpha1 "github.com/suse-edge/edge-upgrade-controller/api/v1alpha1"
+	lifecyclev1alpha1 "github.com/suse-edge/edge-upgrade-controller/api/v1alpha1"
 	"github.com/suse-edge/edge-upgrade-controller/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
@@ -47,7 +47,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(edgesusecomv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(lifecyclev1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 

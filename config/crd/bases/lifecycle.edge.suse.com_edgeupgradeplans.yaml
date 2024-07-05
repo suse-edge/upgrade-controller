@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.15.0
-  name: edgeupgradeplans.edge.suse.com
+  name: edgeupgradeplans.lifecycle.edge.suse.com
 spec:
-  group: edge.suse.com
+  group: lifecycle.edge.suse.com
   names:
     kind: EdgeUpgradePlan
     listKind: EdgeUpgradePlanList

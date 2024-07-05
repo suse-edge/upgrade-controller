@@ -8,7 +8,7 @@ metadata:
   name: edgeupgradeplan-editor-role
 rules:
 - apiGroups:
-  - edge.suse.com
+  - lifecycle.edge.suse.com
   resources:
   - edgeupgradeplans
   verbs:
@@ -20,7 +20,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - edge.suse.com
+  - lifecycle.edge.suse.com
   resources:
   - edgeupgradeplans/status
   verbs:

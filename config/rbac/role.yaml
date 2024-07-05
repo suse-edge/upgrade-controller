@@ -5,7 +5,7 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - edge.suse.com
+  - lifecycle.edge.suse.com
   resources:
   - edgeupgradeplans
   verbs:
@@ -17,13 +17,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - edge.suse.com
+  - lifecycle.edge.suse.com
   resources:
   - edgeupgradeplans/finalizers
   verbs:
   - update
 - apiGroups:
-  - edge.suse.com
+  - lifecycle.edge.suse.com
   resources:
   - edgeupgradeplans/status
   verbs:

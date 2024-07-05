@@ -13,6 +13,7 @@ resources:
     namespaced: true
   controller: true
   domain: edge.suse.com
+  group: lifecycle
   kind: EdgeUpgradePlan
   path: github.com/suse-edge/edge-upgrade-controller/api/v1alpha1
   version: v1alpha1
