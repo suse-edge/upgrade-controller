@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- lifecycle_v1alpha1_edgeupgradeplan.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples
