@@ -1,16 +1,16 @@
-# permissions for end users to edit edgeupgradeplans.
+# permissions for end users to edit upgradeplans.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    app.kubernetes.io/name: edge-upgrade-controller
+    app.kubernetes.io/name: upgrade-controller
     app.kubernetes.io/managed-by: kustomize
-  name: edgeupgradeplan-editor-role
+  name: upgradeplan-editor-role
 rules:
 - apiGroups:
-  - lifecycle.edge.suse.com
+  - lifecycle.suse.com
   resources:
-  - edgeupgradeplans
+  - upgradeplans
   verbs:
   - create
   - delete
@@ -20,8 +20,8 @@ rules:
   - update
   - watch
 - apiGroups:
-  - lifecycle.edge.suse.com
+  - lifecycle.suse.com
   resources:
-  - edgeupgradeplans/status
+  - upgradeplans/status
   verbs:
   - get

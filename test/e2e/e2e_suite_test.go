@@ -27,6 +27,6 @@ import (
 // Run e2e tests using the Ginkgo runner.
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
-	fmt.Fprintf(GinkgoWriter, "Starting edge-upgrade-controller suite\n")
+	fmt.Fprintf(GinkgoWriter, "Starting upgrade-controller suite\n")
 	RunSpecs(t, "e2e suite")
 }
