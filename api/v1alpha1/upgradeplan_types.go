@@ -24,7 +24,7 @@ import (
 type UpgradePlanSpec struct {
 	// ReleaseVersion specifies the target version for platform upgrade.
 	// The version format is X.Y.Z, for example "3.0.2".
-	ReleaseVersion string `json:"releaseVersion,omitempty"`
+	ReleaseVersion string `json:"releaseVersion"`
 }
 
 // UpgradePlanStatus defines the observed state of UpgradePlan

@@ -44,6 +44,8 @@ spec:
                   ReleaseVersion specifies the target version for platform upgrade.
                   The version format is X.Y.Z, for example "3.0.2".
                 type: string
+            required:
+            - releaseVersion
             type: object
           status:
             description: UpgradePlanStatus defines the observed state of UpgradePlan
