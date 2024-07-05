@@ -1,32 +1,23 @@
----
+# permissions for end users to view upgradeplans.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: manager-role
+  labels:
+    app.kubernetes.io/name: upgrade-controller
+    app.kubernetes.io/managed-by: kustomize
+  name: upgradeplan-viewer-role
 rules:
 - apiGroups:
   - lifecycle.suse.com
   resources:
   - upgradeplans
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch
-- apiGroups:
-  - lifecycle.suse.com
-  resources:
-  - upgradeplans/finalizers
-  verbs:
-  - update
 - apiGroups:
   - lifecycle.suse.com
   resources:
   - upgradeplans/status
   verbs:
   - get
-  - patch
-  - update

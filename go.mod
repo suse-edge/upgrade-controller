@@ -1,4 +1,4 @@
-module github.com/suse-edge/edge-upgrade-controller
+module github.com/suse-edge/upgrade-controller
 
 go 1.22.0
 

@@ -24,29 +24,29 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	lifecyclev1alpha1 "github.com/suse-edge/edge-upgrade-controller/api/v1alpha1"
+	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 )
 
-// EdgeUpgradePlanReconciler reconciles a EdgeUpgradePlan object
-type EdgeUpgradePlanReconciler struct {
+// UpgradePlanReconciler reconciles a UpgradePlan object
+type UpgradePlanReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=lifecycle.edge.suse.com,resources=edgeupgradeplans,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=lifecycle.edge.suse.com,resources=edgeupgradeplans/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=lifecycle.edge.suse.com,resources=edgeupgradeplans/finalizers,verbs=update
+// +kubebuilder:rbac:groups=lifecycle.suse.com,resources=upgradeplans,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=lifecycle.suse.com,resources=upgradeplans/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=lifecycle.suse.com,resources=upgradeplans/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the EdgeUpgradePlan object against the actual cluster state, and then
+// the UpgradePlan object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.18.2/pkg/reconcile
-func (r *EdgeUpgradePlanReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *UpgradePlanReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
 	// TODO(user): your logic here
@@ -55,8 +55,8 @@ func (r *EdgeUpgradePlanReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *EdgeUpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&lifecyclev1alpha1.EdgeUpgradePlan{}).
+		For(&lifecyclev1alpha1.UpgradePlan{}).
 		Complete(r)
 }

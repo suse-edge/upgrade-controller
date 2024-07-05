@@ -27,10 +27,10 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	lifecyclev1alpha1 "github.com/suse-edge/edge-upgrade-controller/api/v1alpha1"
+	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 )
 
-var _ = Describe("EdgeUpgradePlan Controller", func() {
+var _ = Describe("UpgradePlan Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
@@ -40,13 +40,13 @@ var _ = Describe("EdgeUpgradePlan Controller", func() {
 			Name:      resourceName,
 			Namespace: "default", // TODO(user):Modify as needed
 		}
-		edgeupgradeplan := &lifecyclev1alpha1.EdgeUpgradePlan{}
+		upgradeplan := &lifecyclev1alpha1.UpgradePlan{}
 
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind EdgeUpgradePlan")
-			err := k8sClient.Get(ctx, typeNamespacedName, edgeupgradeplan)
+			By("creating the custom resource for the Kind UpgradePlan")
+			err := k8sClient.Get(ctx, typeNamespacedName, upgradeplan)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &lifecyclev1alpha1.EdgeUpgradePlan{
+				resource := &lifecyclev1alpha1.UpgradePlan{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
@@ -59,16 +59,16 @@ var _ = Describe("EdgeUpgradePlan Controller", func() {
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &lifecyclev1alpha1.EdgeUpgradePlan{}
+			resource := &lifecyclev1alpha1.UpgradePlan{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Cleanup the specific resource instance EdgeUpgradePlan")
+			By("Cleanup the specific resource instance UpgradePlan")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
-			controllerReconciler := &EdgeUpgradePlanReconciler{
+			controllerReconciler := &UpgradePlanReconciler{
 				Client: k8sClient,
 				Scheme: k8sClient.Scheme(),
 			}

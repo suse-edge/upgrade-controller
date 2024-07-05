@@ -23,17 +23,17 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// EdgeUpgradePlanSpec defines the desired state of EdgeUpgradePlan
-type EdgeUpgradePlanSpec struct {
+// UpgradePlanSpec defines the desired state of UpgradePlan
+type UpgradePlanSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of EdgeUpgradePlan. Edit edgeupgradeplan_types.go to remove/update
+	// Foo is an example field of UpgradePlan. Edit upgradeplan_types.go to remove/update
 	Foo string `json:"foo,omitempty"`
 }
 
-// EdgeUpgradePlanStatus defines the observed state of EdgeUpgradePlan
-type EdgeUpgradePlanStatus struct {
+// UpgradePlanStatus defines the observed state of UpgradePlan
+type UpgradePlanStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 }
@@ -41,24 +41,24 @@ type EdgeUpgradePlanStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
-// EdgeUpgradePlan is the Schema for the edgeupgradeplans API
-type EdgeUpgradePlan struct {
+// UpgradePlan is the Schema for the upgradeplans API
+type UpgradePlan struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   EdgeUpgradePlanSpec   `json:"spec,omitempty"`
-	Status EdgeUpgradePlanStatus `json:"status,omitempty"`
+	Spec   UpgradePlanSpec   `json:"spec,omitempty"`
+	Status UpgradePlanStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// EdgeUpgradePlanList contains a list of EdgeUpgradePlan
-type EdgeUpgradePlanList struct {
+// UpgradePlanList contains a list of UpgradePlan
+type UpgradePlanList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []EdgeUpgradePlan `json:"items"`
+	Items           []UpgradePlan `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&EdgeUpgradePlan{}, &EdgeUpgradePlanList{})
+	SchemeBuilder.Register(&UpgradePlan{}, &UpgradePlanList{})
 }

@@ -32,7 +32,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	lifecyclev1alpha1 "github.com/suse-edge/edge-upgrade-controller/api/v1alpha1"
+	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 	// +kubebuilder:scaffold:imports
 )
 
