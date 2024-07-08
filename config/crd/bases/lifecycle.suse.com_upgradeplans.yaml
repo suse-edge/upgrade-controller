@@ -39,10 +39,13 @@ spec:
           spec:
             description: UpgradePlanSpec defines the desired state of UpgradePlan
             properties:
-              foo:
-                description: Foo is an example field of UpgradePlan. Edit upgradeplan_types.go
-                  to remove/update
+              releaseVersion:
+                description: |-
+                  ReleaseVersion specifies the target version for platform upgrade.
+                  The version format is X.Y.Z, for example "3.0.2".
                 type: string
+            required:
+            - releaseVersion
             type: object
           status:
             description: UpgradePlanStatus defines the observed state of UpgradePlan
