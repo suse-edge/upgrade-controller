@@ -25,12 +25,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
+	"github.com/suse-edge/upgrade-controller/pkg/release"
 )
 
 // UpgradePlanReconciler reconciles a UpgradePlan object
 type UpgradePlanReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+
+	Releases map[string]*release.Release
 }
 
 // +kubebuilder:rbac:groups=lifecycle.suse.com,resources=upgradeplans,verbs=get;list;watch;create;update;patch;delete
