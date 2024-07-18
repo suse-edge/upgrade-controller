@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	upgradecattlev1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
@@ -25,7 +26,6 @@ import (
 	"github.com/suse-edge/upgrade-controller/internal/upgrade"
 	"github.com/suse-edge/upgrade-controller/pkg/release"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,31 +59,19 @@ type UpgradePlanReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *UpgradePlanReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx)
+	plan := &lifecyclev1alpha1.UpgradePlan{}
 
-	var plan lifecyclev1alpha1.UpgradePlan
-
-	if err := r.Get(ctx, req.NamespacedName, &plan); err != nil {
+	if err := r.Get(ctx, req.NamespacedName, plan); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	logger := log.FromContext(ctx)
 	logger.Info("Reconciling UpgradePlan")
 
-	planCopy := plan.DeepCopy()
-	result, execErr := r.executePlan(ctx, planCopy)
+	result, err := r.executePlan(ctx, plan)
 
-	// Attempt to update the plan status.
-	if !equality.Semantic.DeepEqual(plan.Status, planCopy.Status) {
-		if err := r.Status().Update(ctx, planCopy); err != nil {
-			// Log the exec error in order not to lose it, but requeue with the status error.
-			if execErr != nil {
-				logger.Error(execErr, "failed to sync upgrade plan")
-			}
-			return ctrl.Result{}, err
-		}
-	}
-
-	return result, execErr
+	// Attempt to update the plan status before returning.
+	return result, errors.Join(err, r.Status().Update(ctx, plan))
 }
 
 func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) (ctrl.Result, error) {
@@ -119,8 +107,6 @@ func (r *UpgradePlanReconciler) recordCreatedPlan(upgradePlan *lifecyclev1alpha1
 }
 
 func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, kubernetesVersion string) (ctrl.Result, error) {
-	var requeue bool
-
 	controlPlanePlan := &upgradecattlev1.Plan{}
 	if err := r.Get(ctx, upgrade.KubernetesPlanKey(upgrade.ControlPlaneKey, kubernetesVersion), controlPlanePlan); err != nil {
 		if !errors.IsNotFound(err) {
@@ -136,8 +122,8 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgrade
 			return ctrl.Result{}, fmt.Errorf("creating control plane upgrade plan: %w", err)
 		}
 
-		requeue = true
 		r.recordCreatedPlan(upgradePlan, controlPlanePlan.Name, controlPlanePlan.Namespace)
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	workerPlan := &upgradecattlev1.Plan{}
@@ -155,12 +141,7 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgrade
 			return ctrl.Result{}, fmt.Errorf("creating worker plan: %w", err)
 		}
 
-		requeue = true
 		r.recordCreatedPlan(upgradePlan, workerPlan.Name, workerPlan.Namespace)
-	}
-
-	if requeue {
-		// At least one plan was just created.
 		return ctrl.Result{Requeue: true}, nil
 	}
 
@@ -189,12 +170,13 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgrade
 	if !isKubernetesUpgraded(nodeList, selector, kubernetesVersion) {
 		condition := metav1.Condition{Type: lifecyclev1alpha1.KubernetesUpgradedCondition, Status: metav1.ConditionFalse, Reason: lifecyclev1alpha1.UpgradeInProgress, Message: "Worker nodes are being upgraded"}
 		meta.SetStatusCondition(&upgradePlan.Status.Conditions, condition)
-	} else {
-		condition := metav1.Condition{Type: lifecyclev1alpha1.KubernetesUpgradedCondition, Status: metav1.ConditionTrue, Reason: lifecyclev1alpha1.UpgradeSucceeded, Message: "All cluster nodes are upgraded"}
-		meta.SetStatusCondition(&upgradePlan.Status.Conditions, condition)
+		return ctrl.Result{}, nil
 	}
 
-	return ctrl.Result{}, nil
+	condition := metav1.Condition{Type: lifecyclev1alpha1.KubernetesUpgradedCondition, Status: metav1.ConditionTrue, Reason: lifecyclev1alpha1.UpgradeSucceeded, Message: "All cluster nodes are upgraded"}
+	meta.SetStatusCondition(&upgradePlan.Status.Conditions, condition)
+
+	return ctrl.Result{Requeue: true}, nil
 }
 
 func isKubernetesUpgraded(nodeList *corev1.NodeList, selector labels.Selector, kubernetesVersion string) bool {
@@ -226,7 +208,7 @@ func isKubernetesUpgraded(nodeList *corev1.NodeList, selector labels.Selector, k
 // SetupWithManager sets up the controller with the Manager.
 func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&lifecyclev1alpha1.UpgradePlan{}).
+		For(&lifecyclev1alpha1.UpgradePlan{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&upgradecattlev1.Plan{}, builder.WithPredicates(predicate.Funcs{
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				// Upgrade plans are being constantly updated on every node change.
