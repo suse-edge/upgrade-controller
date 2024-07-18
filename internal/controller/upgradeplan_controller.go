@@ -106,43 +106,37 @@ func (r *UpgradePlanReconciler) recordCreatedPlan(upgradePlan *lifecyclev1alpha1
 	r.Recorder.Eventf(upgradePlan, corev1.EventTypeNormal, "PlanCreated", "Upgrade plan created: %s/%s", namespace, name)
 }
 
-func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, kubernetesVersion string) (ctrl.Result, error) {
-	controlPlanePlan := &upgradecattlev1.Plan{}
-	if err := r.Get(ctx, upgrade.KubernetesPlanKey(upgrade.ControlPlaneKey, kubernetesVersion), controlPlanePlan); err != nil {
-		if !errors.IsNotFound(err) {
-			return ctrl.Result{}, err
-		}
-
-		controlPlanePlan = upgrade.KubernetesControlPlanePlan(kubernetesVersion)
-		if err = ctrl.SetControllerReference(upgradePlan, controlPlanePlan, r.Scheme); err != nil {
-			return ctrl.Result{}, fmt.Errorf("setting controller reference: %w", err)
-		}
-
-		if err = r.Create(ctx, controlPlanePlan); err != nil {
-			return ctrl.Result{}, fmt.Errorf("creating control plane upgrade plan: %w", err)
-		}
-
-		r.recordCreatedPlan(upgradePlan, controlPlanePlan.Name, controlPlanePlan.Namespace)
-		return ctrl.Result{Requeue: true}, nil
+func (r *UpgradePlanReconciler) createPlan(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, plan *upgradecattlev1.Plan) (ctrl.Result, error) {
+	if err := ctrl.SetControllerReference(upgradePlan, plan, r.Scheme); err != nil {
+		return ctrl.Result{}, fmt.Errorf("setting controller reference: %w", err)
 	}
 
-	workerPlan := &upgradecattlev1.Plan{}
-	if err := r.Get(ctx, upgrade.KubernetesPlanKey(upgrade.WorkersKey, kubernetesVersion), workerPlan); err != nil {
+	if err := r.Create(ctx, plan); err != nil {
+		return ctrl.Result{}, fmt.Errorf("creating upgrade plan: %w", err)
+	}
+
+	r.recordCreatedPlan(upgradePlan, plan.Name, plan.Namespace)
+
+	return ctrl.Result{Requeue: true}, nil
+}
+
+func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, kubernetesVersion string) (ctrl.Result, error) {
+	controlPlanePlan := upgrade.KubernetesControlPlanePlan(kubernetesVersion)
+	if err := r.Get(ctx, client.ObjectKeyFromObject(controlPlanePlan), controlPlanePlan); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
 		}
 
-		workerPlan = upgrade.KubernetesWorkerPlan(kubernetesVersion)
-		if err = ctrl.SetControllerReference(upgradePlan, workerPlan, r.Scheme); err != nil {
-			return ctrl.Result{}, fmt.Errorf("setting controller reference: %w", err)
+		return r.createPlan(ctx, upgradePlan, controlPlanePlan)
+	}
+
+	workerPlan := upgrade.KubernetesWorkerPlan(kubernetesVersion)
+	if err := r.Get(ctx, client.ObjectKeyFromObject(workerPlan), workerPlan); err != nil {
+		if !errors.IsNotFound(err) {
+			return ctrl.Result{}, err
 		}
 
-		if err = r.Create(ctx, workerPlan); err != nil {
-			return ctrl.Result{}, fmt.Errorf("creating worker plan: %w", err)
-		}
-
-		r.recordCreatedPlan(upgradePlan, workerPlan.Name, workerPlan.Namespace)
-		return ctrl.Result{Requeue: true}, nil
+		return r.createPlan(ctx, upgradePlan, workerPlan)
 	}
 
 	nodeList := &corev1.NodeList{}

@@ -7,29 +7,21 @@ import (
 	upgradecattlev1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 const (
 	rke2UpgradeImage = "rancher/rke2-upgrade"
 
-	ControlPlaneKey = "control-plane"
-	WorkersKey      = "workers"
+	controlPlaneKey = "control-plane"
+	workersKey      = "workers"
 )
 
 func kubernetesPlanName(typeKey, version string) string {
 	return fmt.Sprintf("%s-%s", typeKey, strings.ReplaceAll(version, "+", "-"))
 }
 
-func KubernetesPlanKey(typeKey, kubernetesVersion string) types.NamespacedName {
-	return types.NamespacedName{
-		Name:      kubernetesPlanName(typeKey, kubernetesVersion),
-		Namespace: upgradeNamespace,
-	}
-}
-
 func KubernetesControlPlanePlan(version string) *upgradecattlev1.Plan {
-	controlPlanePlanName := kubernetesPlanName(ControlPlaneKey, version)
+	controlPlanePlanName := kubernetesPlanName(controlPlaneKey, version)
 
 	controlPlanePlan := baseUpgradePlan(controlPlanePlanName)
 	controlPlanePlan.Labels = map[string]string{
@@ -77,8 +69,8 @@ func KubernetesControlPlanePlan(version string) *upgradecattlev1.Plan {
 }
 
 func KubernetesWorkerPlan(version string) *upgradecattlev1.Plan {
-	controlPlanePlanName := kubernetesPlanName(ControlPlaneKey, version)
-	workerPlanName := kubernetesPlanName(WorkersKey, version)
+	controlPlanePlanName := kubernetesPlanName(controlPlaneKey, version)
+	workerPlanName := kubernetesPlanName(workersKey, version)
 
 	workerPlan := baseUpgradePlan(workerPlanName)
 	workerPlan.Labels = map[string]string{
