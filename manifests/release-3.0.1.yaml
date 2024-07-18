@@ -5,4 +5,4 @@ components:
     k3s:
       version: v1.28.9+k3s1
     rke2:
-      version: v1.28.9+k3s1
+      version: v1.28.9+rke2r1

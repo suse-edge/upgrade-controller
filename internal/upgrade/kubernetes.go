@@ -11,8 +11,6 @@ import (
 )
 
 const (
-	controlPlaneLabel = "node-role.kubernetes.io/control-plane"
-
 	rke2UpgradeImage = "rancher/rke2-upgrade"
 
 	ControlPlaneKey = "control-plane"
@@ -62,7 +60,7 @@ func KubernetesControlPlanePlan(version string) *upgradecattlev1.Plan {
 			Effect:   "NoExecute",
 		},
 		{
-			Key:      "node-role.kubernetes.io/control-plane",
+			Key:      controlPlaneLabel,
 			Operator: "Equal",
 			Value:    "",
 			Effect:   "NoSchedule",
