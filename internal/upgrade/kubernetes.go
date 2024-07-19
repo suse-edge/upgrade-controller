@@ -30,7 +30,7 @@ func KubernetesControlPlanePlan(version string) *upgradecattlev1.Plan {
 	controlPlanePlan.Spec.NodeSelector = &metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
 			{
-				Key:      controlPlaneLabel,
+				Key:      ControlPlaneLabel,
 				Operator: "In",
 				Values: []string{
 					"true",
@@ -52,7 +52,7 @@ func KubernetesControlPlanePlan(version string) *upgradecattlev1.Plan {
 			Effect:   "NoExecute",
 		},
 		{
-			Key:      controlPlaneLabel,
+			Key:      ControlPlaneLabel,
 			Operator: "Equal",
 			Value:    "",
 			Effect:   "NoSchedule",
@@ -80,7 +80,7 @@ func KubernetesWorkerPlan(version string) *upgradecattlev1.Plan {
 	workerPlan.Spec.NodeSelector = &metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
 			{
-				Key:      controlPlaneLabel,
+				Key:      ControlPlaneLabel,
 				Operator: "NotIn",
 				Values: []string{
 					"true",

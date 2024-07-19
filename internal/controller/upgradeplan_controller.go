@@ -117,6 +117,16 @@ func (r *UpgradePlanReconciler) createPlan(ctx context.Context, upgradePlan *lif
 	return ctrl.Result{Requeue: true}, nil
 }
 
+func setInProgressCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, message string) {
+	condition := metav1.Condition{Type: conditionType, Status: metav1.ConditionFalse, Reason: lifecyclev1alpha1.UpgradeInProgress, Message: message}
+	meta.SetStatusCondition(&plan.Status.Conditions, condition)
+}
+
+func setSuccessfulCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, message string) {
+	condition := metav1.Condition{Type: conditionType, Status: metav1.ConditionTrue, Reason: lifecyclev1alpha1.UpgradeSucceeded, Message: message}
+	meta.SetStatusCondition(&plan.Status.Conditions, condition)
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
