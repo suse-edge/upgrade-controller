@@ -5,6 +5,20 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
   - lifecycle.suse.com
   resources:
   - upgradeplans
@@ -30,3 +44,12 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - upgrade.cattle.io
+  resources:
+  - plans
+  verbs:
+  - create
+  - get
+  - list
+  - watch

@@ -20,6 +20,22 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	KubernetesUpgradedCondition = "KubernetesUpgraded"
+
+	// UpgradePending indicates that the upgrade process has not begun.
+	UpgradePending = "Pending"
+
+	// UpgradeInProgress indicates that the upgrade process has started.
+	UpgradeInProgress = "InProgress"
+
+	// UpgradeSucceeded indicates that the upgrade process has been successful.
+	UpgradeSucceeded = "Succeeded"
+
+	// UpgradeFailed indicates that an error occurred during the upgrade process.
+	UpgradeFailed = "Failed"
+)
+
 // UpgradePlanSpec defines the desired state of UpgradePlan
 type UpgradePlanSpec struct {
 	// ReleaseVersion specifies the target version for platform upgrade.
@@ -29,8 +45,12 @@ type UpgradePlanSpec struct {
 
 // UpgradePlanStatus defines the observed state of UpgradePlan
 type UpgradePlanStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// +listType=map
+	// +listMapKey=type
+	// +patchStrategy=merge
+	// +patchMergeKey=type
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 // +kubebuilder:object:root=true

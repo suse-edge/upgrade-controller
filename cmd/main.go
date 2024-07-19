@@ -19,7 +19,11 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"fmt"
 	"os"
+	"path/filepath"
+
+	"gopkg.in/yaml.v3"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -34,8 +38,10 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	upgradecattlev1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 	"github.com/suse-edge/upgrade-controller/internal/controller"
+	"github.com/suse-edge/upgrade-controller/pkg/release"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -48,6 +54,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(lifecyclev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(upgradecattlev1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -123,9 +130,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	manifestsDir := "manifests" // TODO: Figure out the proper place
+	releases, err := parseReleaseManifests(manifestsDir)
+	if err != nil {
+		setupLog.Error(err, "unable to parse release manifests")
+		os.Exit(1)
+	}
+
 	if err = (&controller.UpgradePlanReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor("upgrade-plan-controller"),
+		Releases: releases,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "UpgradePlan")
 		os.Exit(1)
@@ -146,4 +162,32 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func parseReleaseManifests(manifestsDir string) (map[string]*release.Release, error) {
+	entries, err := os.ReadDir(manifestsDir)
+	if err != nil {
+		return nil, fmt.Errorf("reading manifest dir: %w", err)
+	}
+
+	releases := map[string]*release.Release{}
+
+	for _, entry := range entries {
+		path := filepath.Join(manifestsDir, entry.Name())
+
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("reading manifest: %w", err)
+		}
+
+		var r release.Release
+
+		if err = yaml.Unmarshal(b, &r); err != nil {
+			return nil, fmt.Errorf("decoding release: %w", err)
+		}
+
+		releases[r.ReleaseVersion] = &r
+	}
+
+	return releases, nil
 }
