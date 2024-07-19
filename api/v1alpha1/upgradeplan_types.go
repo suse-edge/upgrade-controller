@@ -26,11 +26,11 @@ const (
 	// UpgradePending indicates that the upgrade process has not begun.
 	UpgradePending = "Pending"
 
-	// UpgradeInProgress indicates that the upgrade process has started (e.g. by creating plans.upgrade.cattle.io resources).
+	// UpgradeInProgress indicates that the upgrade process has started.
 	UpgradeInProgress = "InProgress"
 
 	// UpgradeSucceeded indicates that the upgrade process has been successful.
-	UpgradeSucceeded = "Upgraded"
+	UpgradeSucceeded = "Succeeded"
 
 	// UpgradeFailed indicates that an error occurred during the upgrade process.
 	UpgradeFailed = "Failed"
