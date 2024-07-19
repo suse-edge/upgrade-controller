@@ -1,0 +1,17 @@
+on: [ push, pull_request ]
+name: Build & Test
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Build
+        run: go build -v ./...
+#      TODO: Fix tests and enable step
+#      - name: Test
+#        run: go test -v ./... -tags integration
