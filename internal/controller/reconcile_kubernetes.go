@@ -8,7 +8,6 @@ import (
 	"github.com/suse-edge/upgrade-controller/internal/upgrade"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -22,16 +21,7 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgrade
 			return ctrl.Result{}, err
 		}
 
-		return r.createPlan(ctx, upgradePlan, controlPlanePlan)
-	}
-
-	workerPlan := upgrade.KubernetesWorkerPlan(kubernetesVersion)
-	if err := r.Get(ctx, client.ObjectKeyFromObject(workerPlan), workerPlan); err != nil {
-		if !errors.IsNotFound(err) {
-			return ctrl.Result{}, err
-		}
-
-		return r.createPlan(ctx, upgradePlan, workerPlan)
+		return ctrl.Result{}, r.createPlan(ctx, upgradePlan, controlPlanePlan)
 	}
 
 	nodeList := &corev1.NodeList{}
@@ -45,10 +35,20 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgrade
 	}
 
 	if !isKubernetesUpgraded(nodeList, selector, kubernetesVersion) {
-		condition := metav1.Condition{Type: lifecyclev1alpha1.KubernetesUpgradedCondition, Status: metav1.ConditionFalse, Reason: lifecyclev1alpha1.UpgradeInProgress, Message: "Control plane nodes are being upgraded"}
-		meta.SetStatusCondition(&upgradePlan.Status.Conditions, condition)
-
+		setInProgressCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "Control plane nodes are being upgraded")
 		return ctrl.Result{}, nil
+	} else if controlPlaneOnlyCluster(nodeList) {
+		setSuccessfulCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "All cluster nodes are upgraded")
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	workerPlan := upgrade.KubernetesWorkerPlan(kubernetesVersion)
+	if err = r.Get(ctx, client.ObjectKeyFromObject(workerPlan), workerPlan); err != nil {
+		if !errors.IsNotFound(err) {
+			return ctrl.Result{}, err
+		}
+
+		return ctrl.Result{}, r.createPlan(ctx, upgradePlan, workerPlan)
 	}
 
 	selector, err = metav1.LabelSelectorAsSelector(workerPlan.Spec.NodeSelector)
@@ -57,14 +57,11 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgrade
 	}
 
 	if !isKubernetesUpgraded(nodeList, selector, kubernetesVersion) {
-		condition := metav1.Condition{Type: lifecyclev1alpha1.KubernetesUpgradedCondition, Status: metav1.ConditionFalse, Reason: lifecyclev1alpha1.UpgradeInProgress, Message: "Worker nodes are being upgraded"}
-		meta.SetStatusCondition(&upgradePlan.Status.Conditions, condition)
+		setInProgressCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "Worker nodes are being upgraded")
 		return ctrl.Result{}, nil
 	}
 
-	condition := metav1.Condition{Type: lifecyclev1alpha1.KubernetesUpgradedCondition, Status: metav1.ConditionTrue, Reason: lifecyclev1alpha1.UpgradeSucceeded, Message: "All cluster nodes are upgraded"}
-	meta.SetStatusCondition(&upgradePlan.Status.Conditions, condition)
-
+	setSuccessfulCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "All cluster nodes are upgraded")
 	return ctrl.Result{Requeue: true}, nil
 }
 
@@ -87,6 +84,16 @@ func isKubernetesUpgraded(nodeList *corev1.NodeList, selector labels.Selector, k
 			// Upgrade is still in progress.
 			// TODO: Adjust to looking at the `Complete` condition of the
 			//  `plans.upgrade.cattle.io` resources once system-upgrade-controller v0.13.4 is released.
+			return false
+		}
+	}
+
+	return true
+}
+
+func controlPlaneOnlyCluster(nodeList *corev1.NodeList) bool {
+	for _, node := range nodeList.Items {
+		if node.Labels[upgrade.ControlPlaneLabel] != "true" {
 			return false
 		}
 	}

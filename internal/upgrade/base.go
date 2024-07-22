@@ -8,7 +8,7 @@ import (
 const (
 	upgradeNamespace = "cattle-system"
 
-	controlPlaneLabel = "node-role.kubernetes.io/control-plane"
+	ControlPlaneLabel = "node-role.kubernetes.io/control-plane"
 )
 
 func baseUpgradePlan(name string) *upgradecattlev1.Plan {

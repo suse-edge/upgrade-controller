@@ -103,18 +103,28 @@ func (r *UpgradePlanReconciler) recordCreatedPlan(upgradePlan *lifecyclev1alpha1
 	r.Recorder.Eventf(upgradePlan, corev1.EventTypeNormal, "PlanCreated", "Upgrade plan created: %s/%s", namespace, name)
 }
 
-func (r *UpgradePlanReconciler) createPlan(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, plan *upgradecattlev1.Plan) (ctrl.Result, error) {
+func (r *UpgradePlanReconciler) createPlan(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, plan *upgradecattlev1.Plan) error {
 	if err := ctrl.SetControllerReference(upgradePlan, plan, r.Scheme); err != nil {
-		return ctrl.Result{}, fmt.Errorf("setting controller reference: %w", err)
+		return fmt.Errorf("setting controller reference: %w", err)
 	}
 
 	if err := r.Create(ctx, plan); err != nil {
-		return ctrl.Result{}, fmt.Errorf("creating upgrade plan: %w", err)
+		return fmt.Errorf("creating upgrade plan: %w", err)
 	}
 
 	r.recordCreatedPlan(upgradePlan, plan.Name, plan.Namespace)
 
-	return ctrl.Result{Requeue: true}, nil
+	return nil
+}
+
+func setInProgressCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, message string) {
+	condition := metav1.Condition{Type: conditionType, Status: metav1.ConditionFalse, Reason: lifecyclev1alpha1.UpgradeInProgress, Message: message}
+	meta.SetStatusCondition(&plan.Status.Conditions, condition)
+}
+
+func setSuccessfulCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, message string) {
+	condition := metav1.Condition{Type: conditionType, Status: metav1.ConditionTrue, Reason: lifecyclev1alpha1.UpgradeSucceeded, Message: message}
+	meta.SetStatusCondition(&plan.Status.Conditions, condition)
 }
 
 // SetupWithManager sets up the controller with the Manager.
