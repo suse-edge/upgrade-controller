@@ -21,7 +21,7 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgrade
 			return ctrl.Result{}, err
 		}
 
-		return r.createPlan(ctx, upgradePlan, controlPlanePlan)
+		return ctrl.Result{}, r.createPlan(ctx, upgradePlan, controlPlanePlan)
 	}
 
 	nodeList := &corev1.NodeList{}
@@ -48,7 +48,7 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgrade
 			return ctrl.Result{}, err
 		}
 
-		return r.createPlan(ctx, upgradePlan, workerPlan)
+		return ctrl.Result{}, r.createPlan(ctx, upgradePlan, workerPlan)
 	}
 
 	selector, err = metav1.LabelSelectorAsSelector(workerPlan.Spec.NodeSelector)
