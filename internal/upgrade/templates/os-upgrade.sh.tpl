@@ -11,7 +11,6 @@ IFS=' ' read -r -a SUPPORTED_ARCH_ARRAY <<< $(echo "{{.SupportedArchs}}" | tr -d
 
 found=false
 for arch in "${SUPPORTED_ARCH_ARRAY[@]}"; do
-    echo "$arch"
     if [ "${SYSTEM_ARCH}" == ${arch} ]; then
         found=true
         break
