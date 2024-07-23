@@ -12,9 +12,6 @@ import (
 const (
 	rke2UpgradeImage = "rancher/rke2-upgrade"
 	k3sUpgradeImage  = "rancher/k3s-upgrade"
-
-	controlPlaneKey = "control-plane"
-	workersKey      = "workers"
 )
 
 func kubernetesPlanName(typeKey, version string) string {

@@ -7,8 +7,10 @@ import (
 )
 
 const (
-	planNamespace  = "cattle-system"
-	PlanAnnotation = "lifecycle.suse.com/upgrade-plan"
+	planNamespace   = "cattle-system"
+	PlanAnnotation  = "lifecycle.suse.com/upgrade-plan"
+	controlPlaneKey = "control-plane"
+	workersKey      = "workers"
 
 	ControlPlaneLabel = "node-role.kubernetes.io/control-plane"
 )
