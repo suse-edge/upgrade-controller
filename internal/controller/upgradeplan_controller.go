@@ -88,7 +88,7 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 	// Upgrade OS here...
 
 	if !meta.IsStatusConditionTrue(upgradePlan.Status.Conditions, lifecyclev1alpha1.KubernetesUpgradedCondition) {
-		return r.reconcileKubernetes(ctx, upgradePlan, release.Components.Kubernetes.RKE2.Version)
+		return r.reconcileKubernetes(ctx, upgradePlan, release)
 	}
 
 	// Upgrade rest of the components here...

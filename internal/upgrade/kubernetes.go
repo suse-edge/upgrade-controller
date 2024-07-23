@@ -11,6 +11,7 @@ import (
 
 const (
 	rke2UpgradeImage = "rancher/rke2-upgrade"
+	k3sUpgradeImage  = "rancher/k3s-upgrade"
 
 	controlPlaneKey = "control-plane"
 	workersKey      = "workers"
@@ -20,12 +21,21 @@ func kubernetesPlanName(typeKey, version string) string {
 	return fmt.Sprintf("%s-%s", typeKey, strings.ReplaceAll(version, "+", "-"))
 }
 
+func kubernetesUpgradeImage(version string) string {
+	if strings.Contains(version, "k3s") {
+		return k3sUpgradeImage
+	}
+
+	return rke2UpgradeImage
+}
+
 func KubernetesControlPlanePlan(version string) *upgradecattlev1.Plan {
 	controlPlanePlanName := kubernetesPlanName(controlPlaneKey, version)
+	upgradeImage := kubernetesUpgradeImage(version)
 
 	controlPlanePlan := baseUpgradePlan(controlPlanePlanName)
 	controlPlanePlan.Labels = map[string]string{
-		"rke2-upgrade": "control-plane",
+		"k8s-upgrade": "control-plane",
 	}
 	controlPlanePlan.Spec.NodeSelector = &metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
@@ -40,7 +50,7 @@ func KubernetesControlPlanePlan(version string) *upgradecattlev1.Plan {
 	}
 	controlPlanePlan.Spec.Concurrency = 1
 	controlPlanePlan.Spec.Upgrade = &upgradecattlev1.ContainerSpec{
-		Image: rke2UpgradeImage,
+		Image: upgradeImage,
 	}
 	controlPlanePlan.Spec.Version = version
 	controlPlanePlan.Spec.Cordon = true
@@ -71,10 +81,11 @@ func KubernetesControlPlanePlan(version string) *upgradecattlev1.Plan {
 func KubernetesWorkerPlan(version string) *upgradecattlev1.Plan {
 	controlPlanePlanName := kubernetesPlanName(controlPlaneKey, version)
 	workerPlanName := kubernetesPlanName(workersKey, version)
+	upgradeImage := kubernetesUpgradeImage(version)
 
 	workerPlan := baseUpgradePlan(workerPlanName)
 	workerPlan.Labels = map[string]string{
-		"rke2-upgrade": "worker",
+		"k8s-upgrade": "worker",
 	}
 	workerPlan.Spec.Concurrency = 2
 	workerPlan.Spec.NodeSelector = &metav1.LabelSelector{
@@ -93,10 +104,10 @@ func KubernetesWorkerPlan(version string) *upgradecattlev1.Plan {
 			"prepare",
 			controlPlanePlanName,
 		},
-		Image: rke2UpgradeImage,
+		Image: upgradeImage,
 	}
 	workerPlan.Spec.Upgrade = &upgradecattlev1.ContainerSpec{
-		Image: rke2UpgradeImage,
+		Image: upgradeImage,
 	}
 	workerPlan.Spec.Version = version
 	workerPlan.Spec.Cordon = true
