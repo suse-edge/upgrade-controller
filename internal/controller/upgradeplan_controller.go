@@ -58,7 +58,7 @@ type UpgradePlanReconciler struct {
 // +kubebuilder:rbac:groups=lifecycle.suse.com,resources=upgradeplans/finalizers,verbs=update
 // +kubebuilder:rbac:groups=upgrade.cattle.io,resources=plans,verbs=create;list;get;watch
 // +kubebuilder:rbac:groups="",resources=nodes,verbs=watch;list
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;delete;create
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;delete;create;watch
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch
 // +kubebuilder:rbac:groups=batch,resources=jobs/status,verbs=get
