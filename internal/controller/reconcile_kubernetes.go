@@ -16,13 +16,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, release *release.Release) (ctrl.Result, error) {
+func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, kubernetes *release.Kubernetes) (ctrl.Result, error) {
 	nodeList := &corev1.NodeList{}
 	if err := r.List(ctx, nodeList); err != nil {
 		return ctrl.Result{}, fmt.Errorf("listing nodes: %w", err)
 	}
 
-	kubernetesVersion, err := targetKubernetesVersion(nodeList, release)
+	kubernetesVersion, err := targetKubernetesVersion(nodeList, kubernetes)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("identifying target kubernetes version: %w", err)
 	}
@@ -72,7 +72,7 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgrade
 	return ctrl.Result{Requeue: true}, nil
 }
 
-func targetKubernetesVersion(nodeList *corev1.NodeList, release *release.Release) (string, error) {
+func targetKubernetesVersion(nodeList *corev1.NodeList, kubernetes *release.Kubernetes) (string, error) {
 	if len(nodeList.Items) == 0 {
 		return "", fmt.Errorf("unable to determine current kubernetes version due to empty node list")
 	}
@@ -81,9 +81,9 @@ func targetKubernetesVersion(nodeList *corev1.NodeList, release *release.Release
 
 	switch {
 	case strings.Contains(kubeletVersion, "k3s"):
-		return release.Components.Kubernetes.K3S.Version, nil
+		return kubernetes.K3S.Version, nil
 	case strings.Contains(kubeletVersion, "rke2"):
-		return release.Components.Kubernetes.RKE2.Version, nil
+		return kubernetes.RKE2.Version, nil
 	default:
 		return "", fmt.Errorf("upgrading from kubernetes version %s is not supported", kubeletVersion)
 	}
