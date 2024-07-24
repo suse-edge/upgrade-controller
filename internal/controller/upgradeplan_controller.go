@@ -20,10 +20,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
+	helmcattlev1 "github.com/k3s-io/helm-controller/pkg/apis/helm.cattle.io/v1"
+	"github.com/k3s-io/helm-controller/pkg/controllers/chart"
 	upgradecattlev1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
+	"github.com/suse-edge/upgrade-controller/internal/upgrade"
 	"github.com/suse-edge/upgrade-controller/pkg/release"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,8 +38,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // UpgradePlanReconciler reconciles a UpgradePlan object
@@ -53,6 +60,10 @@ type UpgradePlanReconciler struct {
 // +kubebuilder:rbac:groups="",resources=nodes,verbs=watch;list
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;delete;create
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch
+// +kubebuilder:rbac:groups=batch,resources=jobs/status,verbs=get
+// +kubebuilder:rbac:groups=helm.cattle.io,resources=helmcharts,verbs=get;update;list;watch
+// +kubebuilder:rbac:groups=helm.cattle.io,resources=helmcharts/status,verbs=get
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -80,21 +91,20 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 
 	if len(upgradePlan.Status.Conditions) == 0 {
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "Kubernetes upgrade is not yet started")
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition, "Rancher upgrade is not yet started")
 
-		// Append OS and other components conditions here...
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	// Upgrade OS here...
-
-	if !meta.IsStatusConditionTrue(upgradePlan.Status.Conditions, lifecyclev1alpha1.KubernetesUpgradedCondition) {
+	switch {
+	case !meta.IsStatusConditionTrue(upgradePlan.Status.Conditions, lifecyclev1alpha1.KubernetesUpgradedCondition):
 		return r.reconcileKubernetes(ctx, upgradePlan, &release.Components.Kubernetes)
+	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition):
+		return r.reconcileRancher(ctx, upgradePlan, &release.Components.Rancher)
 	}
 
-	// Upgrade rest of the components here...
-
 	logger := log.FromContext(ctx)
-	logger.Info("Upgrade completed successfully")
+	logger.Info("Upgrade completed")
 
 	return ctrl.Result{}, nil
 }
@@ -159,6 +169,33 @@ func setSkippedCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, mes
 	meta.SetStatusCondition(&plan.Status.Conditions, condition)
 }
 
+func (r *UpgradePlanReconciler) findUpgradePlanFromJob(ctx context.Context, job client.Object) []reconcile.Request {
+	jobLabels := job.GetLabels()
+	chartName, ok := jobLabels[chart.Label]
+	if !ok || chartName == "" {
+		// Job is not scheduled by the Helm controller.
+		return []reconcile.Request{}
+	}
+
+	helmChart := &helmcattlev1.HelmChart{}
+	if err := r.Get(ctx, upgrade.ChartNamespacedName(chartName), helmChart); err != nil {
+		logger := log.FromContext(ctx)
+		logger.Error(err, "failed to get helm chart")
+
+		return []reconcile.Request{}
+	}
+
+	planName, ok := helmChart.Annotations[upgrade.PlanAnnotation]
+	if !ok || planName == "" {
+		// Helm chart is not managed by the Upgrade controller.
+		return []reconcile.Request{}
+	}
+
+	return []reconcile.Request{
+		{NamespacedName: upgrade.PlanNamespacedName(planName)},
+	}
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
@@ -170,6 +207,29 @@ func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				// where the plans are no longer actively being applied to a node.
 				return len(e.ObjectNew.(*upgradecattlev1.Plan).Status.Applying) == 0 &&
 					len(e.ObjectOld.(*upgradecattlev1.Plan).Status.Applying) != 0
+			},
+		})).
+		Watches(&batchv1.Job{}, handler.EnqueueRequestsFromMapFunc(r.findUpgradePlanFromJob), builder.WithPredicates(predicate.Funcs{
+			CreateFunc: func(e event.CreateEvent) bool {
+				return false
+			},
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				// Only requeue an upgrade plan when a respective job finishes.
+				isJobFinished := func(conditions []batchv1.JobCondition) bool {
+					return slices.ContainsFunc(conditions, func(condition batchv1.JobCondition) bool {
+						return condition.Status == corev1.ConditionTrue &&
+							(condition.Type == batchv1.JobComplete || condition.Type == batchv1.JobFailed)
+					})
+				}
+
+				return isJobFinished(e.ObjectNew.(*batchv1.Job).Status.Conditions) &&
+					!isJobFinished(e.ObjectOld.(*batchv1.Job).Status.Conditions)
+			},
+			DeleteFunc: func(e event.DeleteEvent) bool {
+				return false
+			},
+			GenericFunc: func(e event.GenericEvent) bool {
+				return false
 			},
 		})).
 		Complete(r)

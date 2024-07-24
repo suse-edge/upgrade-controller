@@ -21,12 +21,41 @@ rules:
   - get
   - list
 - apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - batch
+  resources:
+  - jobs/status
+  verbs:
+  - get
+- apiGroups:
   - ""
   resources:
   - events
   verbs:
   - create
   - patch
+- apiGroups:
+  - helm.cattle.io
+  resources:
+  - helmcharts
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - helm.cattle.io
+  resources:
+  - helmcharts/status
+  verbs:
+  - get
 - apiGroups:
   - lifecycle.suse.com
   resources:

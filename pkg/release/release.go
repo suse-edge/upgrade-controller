@@ -9,6 +9,7 @@ type Release struct {
 type Components struct {
 	Kubernetes      Kubernetes      `yaml:"kubernetes"`
 	OperatingSystem OperatingSystem `yaml:"operatingSystem"`
+	Rancher         HelmChart       `yaml:"rancher"`
 }
 
 type Kubernetes struct {
@@ -26,4 +27,10 @@ type OperatingSystem struct {
 	CPEScheme      string   `yaml:"cpeScheme"`
 	RepoGPGPath    string   `yaml:"repoGPGPath"`
 	SupportedArchs []string `yaml:"supportedArchs"`
+}
+
+type HelmChart struct {
+	Name       string `yaml:"chart"`
+	Repository string `yaml:"repository"`
+	Version    string `yaml:"version"`
 }
