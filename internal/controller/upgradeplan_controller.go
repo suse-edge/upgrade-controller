@@ -79,8 +79,7 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 	}
 
 	if len(upgradePlan.Status.Conditions) == 0 {
-		condition := metav1.Condition{Type: lifecyclev1alpha1.KubernetesUpgradedCondition, Status: metav1.ConditionUnknown, Reason: lifecyclev1alpha1.UpgradePending, Message: "Kubernetes upgrade is not yet started"}
-		meta.SetStatusCondition(&upgradePlan.Status.Conditions, condition)
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "Kubernetes upgrade is not yet started")
 
 		// Append OS and other components conditions here...
 		return ctrl.Result{Requeue: true}, nil
@@ -118,6 +117,28 @@ func (r *UpgradePlanReconciler) createPlan(ctx context.Context, upgradePlan *lif
 	return nil
 }
 
+func isHelmUpgradeFinished(plan *lifecyclev1alpha1.UpgradePlan, conditionType string) bool {
+	condition := meta.FindStatusCondition(plan.Status.Conditions, conditionType)
+
+	if condition == nil {
+		return false
+	}
+
+	if condition.Status == metav1.ConditionTrue {
+		return true
+	} else if condition.Status == metav1.ConditionFalse &&
+		(condition.Reason == lifecyclev1alpha1.UpgradeSkipped || condition.Reason == lifecyclev1alpha1.UpgradeFailed) {
+		return true
+	}
+
+	return false
+}
+
+func setPendingCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, message string) {
+	condition := metav1.Condition{Type: conditionType, Status: metav1.ConditionUnknown, Reason: lifecyclev1alpha1.UpgradePending, Message: message}
+	meta.SetStatusCondition(&plan.Status.Conditions, condition)
+}
+
 func setInProgressCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, message string) {
 	condition := metav1.Condition{Type: conditionType, Status: metav1.ConditionFalse, Reason: lifecyclev1alpha1.UpgradeInProgress, Message: message}
 	meta.SetStatusCondition(&plan.Status.Conditions, condition)
@@ -125,6 +146,16 @@ func setInProgressCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, 
 
 func setSuccessfulCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, message string) {
 	condition := metav1.Condition{Type: conditionType, Status: metav1.ConditionTrue, Reason: lifecyclev1alpha1.UpgradeSucceeded, Message: message}
+	meta.SetStatusCondition(&plan.Status.Conditions, condition)
+}
+
+func setFailedCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, message string) {
+	condition := metav1.Condition{Type: conditionType, Status: metav1.ConditionFalse, Reason: lifecyclev1alpha1.UpgradeFailed, Message: message}
+	meta.SetStatusCondition(&plan.Status.Conditions, condition)
+}
+
+func setSkippedCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, message string) {
+	condition := metav1.Condition{Type: conditionType, Status: metav1.ConditionFalse, Reason: lifecyclev1alpha1.UpgradeSkipped, Message: message}
 	meta.SetStatusCondition(&plan.Status.Conditions, condition)
 }
 

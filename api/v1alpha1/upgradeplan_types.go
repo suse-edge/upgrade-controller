@@ -29,6 +29,9 @@ const (
 	// UpgradeInProgress indicates that the upgrade process has started.
 	UpgradeInProgress = "InProgress"
 
+	// UpgradeSkipped indicates that the upgrade has been skipped.
+	UpgradeSkipped = "Skipped"
+
 	// UpgradeSucceeded indicates that the upgrade process has been successful.
 	UpgradeSucceeded = "Succeeded"
 
