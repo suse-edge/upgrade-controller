@@ -1,19 +1,23 @@
 package release
 
 type Release struct {
-	APIVersion     float64 `yaml:"apiVersion"`
-	ReleaseVersion string  `yaml:"releaseVersion"`
-	Components     struct {
-		Kubernetes struct {
-			K3S struct {
-				Version string `yaml:"version"`
-			} `yaml:"k3s"`
-			RKE2 struct {
-				Version string `yaml:"version"`
-			} `yaml:"rke2"`
-		} `yaml:"kubernetes"`
-		OperatingSystem OperatingSystem `yaml:"operatingSystem"`
-	} `yaml:"components"`
+	APIVersion     float64    `yaml:"apiVersion"`
+	ReleaseVersion string     `yaml:"releaseVersion"`
+	Components     Components `yaml:"components"`
+}
+
+type Components struct {
+	Kubernetes      Kubernetes      `yaml:"kubernetes"`
+	OperatingSystem OperatingSystem `yaml:"operatingSystem"`
+}
+
+type Kubernetes struct {
+	K3S  KubernetesDistribution `yaml:"k3s"`
+	RKE2 KubernetesDistribution `yaml:"rke2"`
+}
+
+type KubernetesDistribution struct {
+	Version string `yaml:"version"`
 }
 
 type OperatingSystem struct {
