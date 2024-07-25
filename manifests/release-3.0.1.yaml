@@ -15,6 +15,7 @@ components:
     zypperID: SL-Micro
     cpeScheme: cpe:/o:suse:sl-micro:6.0
     repoGPGPath: /usr/lib/rpm/gnupg/keys/gpg-pubkey-09d9ea69-645b99ce.asc
+    prettyName: "SUSE Linux Micro 6.0"
     supportedArchs:
       - x86_64
     # - aarch64 TODO: add when we start supporting it
