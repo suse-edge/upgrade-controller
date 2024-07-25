@@ -115,6 +115,8 @@ func OSControlPlanePlan(releaseVersion string, releaseOS *release.OperatingSyste
 	controlPlanePlan.Spec.Cordon = true
 	controlPlanePlan.Spec.Version = releaseVersion
 
+	controlPlanePlan.Spec.JobActiveDeadlineSecs = 3600
+
 	controlPlanePlan.Spec.Upgrade = &upgradecattlev1.ContainerSpec{
 		Image:   planImage,
 		Command: []string{"chroot", "/host"},
