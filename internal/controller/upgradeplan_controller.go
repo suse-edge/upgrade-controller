@@ -217,6 +217,9 @@ func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&lifecyclev1alpha1.UpgradePlan{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&upgradecattlev1.Plan{}, builder.WithPredicates(predicate.Funcs{
+			CreateFunc: func(e event.CreateEvent) bool {
+				return false
+			},
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				// Upgrade plans are being constantly updated on every node change.
 				// Ensure that the reconciliation only covers the scenarios
