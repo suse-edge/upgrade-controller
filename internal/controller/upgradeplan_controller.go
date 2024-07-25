@@ -109,22 +109,38 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 	return ctrl.Result{}, nil
 }
 
-func (r *UpgradePlanReconciler) recordCreatedPlan(upgradePlan *lifecyclev1alpha1.UpgradePlan, name, namespace string) {
-	r.Recorder.Eventf(upgradePlan, corev1.EventTypeNormal, "PlanCreated", "Upgrade plan created: %s/%s", namespace, name)
+func (r *UpgradePlanReconciler) createSecret(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, secret *corev1.Secret) error {
+	if err := r.createObject(ctx, upgradePlan, secret); err != nil {
+		return fmt.Errorf("creating secret: %w", err)
+	}
+
+	r.recordCreatedObject(upgradePlan, "SecretCreated", fmt.Sprintf("Secret created: %s/%s", secret.Namespace, secret.Name))
+	return nil
 }
 
 func (r *UpgradePlanReconciler) createPlan(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, plan *upgradecattlev1.Plan) error {
-	if err := ctrl.SetControllerReference(upgradePlan, plan, r.Scheme); err != nil {
-		return fmt.Errorf("setting controller reference: %w", err)
-	}
-
-	if err := r.Create(ctx, plan); err != nil {
+	if err := r.createObject(ctx, upgradePlan, plan); err != nil {
 		return fmt.Errorf("creating upgrade plan: %w", err)
 	}
 
-	r.recordCreatedPlan(upgradePlan, plan.Name, plan.Namespace)
+	r.recordCreatedObject(upgradePlan, "PlanCreated", fmt.Sprintf("Upgrade plan created: %s/%s", plan.Namespace, plan.Name))
+	return nil
+}
+
+func (r *UpgradePlanReconciler) createObject(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, obj client.Object) error {
+	if err := ctrl.SetControllerReference(upgradePlan, obj, r.Scheme); err != nil {
+		return fmt.Errorf("setting controller reference: %w", err)
+	}
+
+	if err := r.Create(ctx, obj); err != nil {
+		return fmt.Errorf("creating object: %w", err)
+	}
 
 	return nil
+}
+
+func (r *UpgradePlanReconciler) recordCreatedObject(upgradePlan *lifecyclev1alpha1.UpgradePlan, reason, msg string) {
+	r.Recorder.Eventf(upgradePlan, corev1.EventTypeNormal, reason, msg)
 }
 
 func isHelmUpgradeFinished(plan *lifecyclev1alpha1.UpgradePlan, conditionType string) bool {
