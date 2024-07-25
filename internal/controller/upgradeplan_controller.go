@@ -90,6 +90,7 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 	}
 
 	if len(upgradePlan.Status.Conditions) == 0 {
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "OS upgrade is not yet started")
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "Kubernetes upgrade is not yet started")
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition, "Rancher upgrade is not yet started")
 
@@ -97,6 +98,9 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 	}
 
 	switch {
+	// TODO: uncomment once OS upgrades support multi node clusters
+	// case !meta.IsStatusConditionTrue(upgradePlan.Status.Conditions, lifecyclev1alpha1.OperatingSystemUpgradedCondition):
+	// 	return r.reconcileOS(ctx, upgradePlan, release)
 	case !meta.IsStatusConditionTrue(upgradePlan.Status.Conditions, lifecyclev1alpha1.KubernetesUpgradedCondition):
 		return r.reconcileKubernetes(ctx, upgradePlan, &release.Components.Kubernetes)
 	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition):
