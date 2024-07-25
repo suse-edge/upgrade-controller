@@ -61,13 +61,12 @@ func OSUpgradeSecret(releaseOS *release.OperatingSystem) (*corev1.Secret, error)
 	return secret, nil
 }
 
-func OSControlPlanePlan(release *release.Release) *upgradecattlev1.Plan {
+func OSControlPlanePlan(releaseVersion string, releaseOS *release.OperatingSystem) *upgradecattlev1.Plan {
 	const (
 		planImage = "registry.suse.com/bci/bci-base:15.5"
 	)
 
-	controlPlanePlanName := osPlanName(controlPlaneKey, release.Components.OperatingSystem.ZypperID, release.Components.OperatingSystem.Version)
-
+	controlPlanePlanName := osPlanName(controlPlaneKey, releaseOS.ZypperID, releaseOS.Version)
 	controlPlanePlan := baseUpgradePlan(controlPlanePlanName)
 	controlPlanePlan.Labels = map[string]string{
 		"os-upgrade": "control-plane",
@@ -114,7 +113,7 @@ func OSControlPlanePlan(release *release.Release) *upgradecattlev1.Plan {
 		},
 	}
 	controlPlanePlan.Spec.Cordon = true
-	controlPlanePlan.Spec.Version = release.ReleaseVersion
+	controlPlanePlan.Spec.Version = releaseVersion
 
 	controlPlanePlan.Spec.Upgrade = &upgradecattlev1.ContainerSpec{
 		Image:   planImage,
