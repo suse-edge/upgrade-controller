@@ -251,5 +251,6 @@ func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return false
 			},
 		})).
+		Owns(&corev1.Secret{}).
 		Complete(r)
 }
