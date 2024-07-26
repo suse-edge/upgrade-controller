@@ -58,7 +58,27 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	// TODO: worker upgrade
+	workerPlan := upgrade.OSWorkerPlan(release.ReleaseVersion, secret.Name, &release.Components.OperatingSystem)
+	if err = r.Get(ctx, client.ObjectKeyFromObject(workerPlan), workerPlan); err != nil {
+		if !errors.IsNotFound(err) {
+			return ctrl.Result{}, err
+		}
+
+		setInProgressCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "Control plane nodes are being upgraded")
+		return ctrl.Result{}, r.createPlan(ctx, upgradePlan, workerPlan)
+	}
+
+	selector, err = metav1.LabelSelectorAsSelector(workerPlan.Spec.NodeSelector)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("parsing node selector: %w", err)
+	}
+
+	if !isOSUpgraded(nodeList, selector, release.Components.OperatingSystem.PrettyName) {
+		setInProgressCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "Control plane nodes are being upgraded")
+		return ctrl.Result{}, nil
+	}
+
+	setSuccessfulCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "All cluster nodes are upgraded")
 	return ctrl.Result{Requeue: true}, nil
 }
 
