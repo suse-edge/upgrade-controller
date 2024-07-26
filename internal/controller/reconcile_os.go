@@ -30,7 +30,7 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 		return ctrl.Result{}, r.createSecret(ctx, upgradePlan, secret)
 	}
 
-	controlPlanePlan := upgrade.OSControlPlanePlan(release.ReleaseVersion, &release.Components.OperatingSystem)
+	controlPlanePlan := upgrade.OSControlPlanePlan(release.ReleaseVersion, secret.Name, &release.Components.OperatingSystem)
 	if err = r.Get(ctx, client.ObjectKeyFromObject(controlPlanePlan), controlPlanePlan); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err

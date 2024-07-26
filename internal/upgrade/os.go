@@ -16,13 +16,16 @@ import (
 
 const (
 	scriptName = "os-upgrade.sh"
-	secretName = "os-upgrade-secret"
 )
 
 //go:embed templates/os-upgrade.sh.tpl
 var osUpgradeScript string
 
 func OSUpgradeSecret(releaseOS *release.OperatingSystem) (*corev1.Secret, error) {
+	const (
+		secretName = "os-upgrade-secret"
+	)
+
 	tmpl, err := template.New(scriptName).Parse(osUpgradeScript)
 	if err != nil {
 		return nil, fmt.Errorf("parsing contents: %w", err)
@@ -61,7 +64,7 @@ func OSUpgradeSecret(releaseOS *release.OperatingSystem) (*corev1.Secret, error)
 	return secret, nil
 }
 
-func OSControlPlanePlan(releaseVersion string, releaseOS *release.OperatingSystem) *upgradecattlev1.Plan {
+func OSControlPlanePlan(releaseVersion, secretName string, releaseOS *release.OperatingSystem) *upgradecattlev1.Plan {
 	const (
 		planImage = "registry.suse.com/bci/bci-base:15.5"
 	)
