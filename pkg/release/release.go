@@ -27,6 +27,7 @@ type OperatingSystem struct {
 	CPEScheme      string   `yaml:"cpeScheme"`
 	RepoGPGPath    string   `yaml:"repoGPGPath"`
 	SupportedArchs []string `yaml:"supportedArchs"`
+	PrettyName     string   `yaml:"prettyName"`
 }
 
 type HelmChart struct {

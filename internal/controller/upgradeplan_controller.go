@@ -58,7 +58,7 @@ type UpgradePlanReconciler struct {
 // +kubebuilder:rbac:groups=lifecycle.suse.com,resources=upgradeplans/finalizers,verbs=update
 // +kubebuilder:rbac:groups=upgrade.cattle.io,resources=plans,verbs=create;list;get;watch
 // +kubebuilder:rbac:groups="",resources=nodes,verbs=watch;list
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;delete;create
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;delete;create;watch
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch
 // +kubebuilder:rbac:groups=batch,resources=jobs/status,verbs=get
@@ -90,6 +90,7 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 	}
 
 	if len(upgradePlan.Status.Conditions) == 0 {
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "OS upgrade is not yet started")
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "Kubernetes upgrade is not yet started")
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition, "Rancher upgrade is not yet started")
 
@@ -97,6 +98,9 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 	}
 
 	switch {
+	// TODO: uncomment once OS upgrades support multi node clusters
+	// case !meta.IsStatusConditionTrue(upgradePlan.Status.Conditions, lifecyclev1alpha1.OperatingSystemUpgradedCondition):
+	// 	return r.reconcileOS(ctx, upgradePlan, release)
 	case !meta.IsStatusConditionTrue(upgradePlan.Status.Conditions, lifecyclev1alpha1.KubernetesUpgradedCondition):
 		return r.reconcileKubernetes(ctx, upgradePlan, &release.Components.Kubernetes)
 	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition):
@@ -109,22 +113,38 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 	return ctrl.Result{}, nil
 }
 
-func (r *UpgradePlanReconciler) recordCreatedPlan(upgradePlan *lifecyclev1alpha1.UpgradePlan, name, namespace string) {
-	r.Recorder.Eventf(upgradePlan, corev1.EventTypeNormal, "PlanCreated", "Upgrade plan created: %s/%s", namespace, name)
+func (r *UpgradePlanReconciler) createSecret(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, secret *corev1.Secret) error {
+	if err := r.createObject(ctx, upgradePlan, secret); err != nil {
+		return fmt.Errorf("creating secret: %w", err)
+	}
+
+	r.recordCreatedObject(upgradePlan, "SecretCreated", fmt.Sprintf("Secret created: %s/%s", secret.Namespace, secret.Name))
+	return nil
 }
 
 func (r *UpgradePlanReconciler) createPlan(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, plan *upgradecattlev1.Plan) error {
-	if err := ctrl.SetControllerReference(upgradePlan, plan, r.Scheme); err != nil {
-		return fmt.Errorf("setting controller reference: %w", err)
-	}
-
-	if err := r.Create(ctx, plan); err != nil {
+	if err := r.createObject(ctx, upgradePlan, plan); err != nil {
 		return fmt.Errorf("creating upgrade plan: %w", err)
 	}
 
-	r.recordCreatedPlan(upgradePlan, plan.Name, plan.Namespace)
+	r.recordCreatedObject(upgradePlan, "PlanCreated", fmt.Sprintf("Upgrade plan created: %s/%s", plan.Namespace, plan.Name))
+	return nil
+}
+
+func (r *UpgradePlanReconciler) createObject(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, obj client.Object) error {
+	if err := ctrl.SetControllerReference(upgradePlan, obj, r.Scheme); err != nil {
+		return fmt.Errorf("setting controller reference: %w", err)
+	}
+
+	if err := r.Create(ctx, obj); err != nil {
+		return fmt.Errorf("creating object: %w", err)
+	}
 
 	return nil
+}
+
+func (r *UpgradePlanReconciler) recordCreatedObject(upgradePlan *lifecyclev1alpha1.UpgradePlan, reason, msg string) {
+	r.Recorder.Eventf(upgradePlan, corev1.EventTypeNormal, reason, msg)
 }
 
 func isHelmUpgradeFinished(plan *lifecyclev1alpha1.UpgradePlan, conditionType string) bool {
@@ -201,6 +221,9 @@ func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&lifecyclev1alpha1.UpgradePlan{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&upgradecattlev1.Plan{}, builder.WithPredicates(predicate.Funcs{
+			CreateFunc: func(e event.CreateEvent) bool {
+				return false
+			},
 			UpdateFunc: func(e event.UpdateEvent) bool {
 				// Upgrade plans are being constantly updated on every node change.
 				// Ensure that the reconciliation only covers the scenarios
@@ -232,5 +255,6 @@ func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return false
 			},
 		})).
+		Owns(&corev1.Secret{}).
 		Complete(r)
 }

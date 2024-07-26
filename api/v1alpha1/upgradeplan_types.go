@@ -21,6 +21,8 @@ import (
 )
 
 const (
+	OperatingSystemUpgradedCondition = "OSUpgraded"
+
 	KubernetesUpgradedCondition = "KubernetesUpgraded"
 	RancherUpgradedCondition    = "RancherUpgraded"
 
