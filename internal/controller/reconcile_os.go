@@ -51,6 +51,7 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 	}
 
 	if !isOSUpgraded(nodeList, selector, release.Components.OperatingSystem.PrettyName) {
+		setInProgressCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "Control plane nodes are being upgraded")
 		return ctrl.Result{}, nil
 	} else if controlPlaneOnlyCluster(nodeList) {
 		setSuccessfulCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "All cluster nodes are upgraded")
