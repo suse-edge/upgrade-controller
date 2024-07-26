@@ -5,7 +5,7 @@ OS_UPGRADED_PLACEHOLDER_PATH="/etc/os-upgrade-successful"
 if [ -f ${OS_UPGRADED_PLACEHOLDER_PATH} ]; then
     # Due to the nature of how SUC handles OS upgrades,
     # the OS upgrade pod will be restarted after an OS reboot.
-    # Whitin the new Pod we only need to check whether the upgrade
+    # Within the new Pod we only need to check whether the upgrade
     # has been done. This is done by checking for the '/run/os-upgrade-successful'
     # file which will only be present on the system if a successful upgrade
     # of the OS has taken place.
@@ -20,7 +20,7 @@ cleanupService(){
 }
 
 executeUpgrade(){
-    # Common Platform Enumeration (CPE) comming from the release manifest
+    # Common Platform Enumeration (CPE) coming from the release manifest
     RELEASE_CPE={{.CPEScheme}}
     # Common Platform Enumeration (CPE) that the system is currently running with
     CURRENT_CPE=`cat /etc/os-release | grep -w CPE_NAME | cut -d "=" -f 2 | tr -d '"'`
@@ -83,7 +83,7 @@ EOF
     BACKGROUND_PROC_PID=$!
     tail --pid ${BACKGROUND_PROC_PID} -f /var/log/transactional-update.log
 
-    # Waits for the backgroud process with pid to finish and propagates its exit code to '$?'
+    # Waits for the background process with pid to finish and propagates its exit code to '$?'
     wait ${BACKGROUND_PROC_PID}
 
     # Get exit code of backgroup process 
