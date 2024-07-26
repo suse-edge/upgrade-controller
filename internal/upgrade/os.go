@@ -107,6 +107,30 @@ func OSControlPlanePlan(releaseVersion, secretName string, releaseOS *release.Op
 	return controlPlanePlan
 }
 
+func OSWorkerPlan(releaseVersion, secretName string, releaseOS *release.OperatingSystem) *upgradecattlev1.Plan {
+	workerPlanName := osPlanName(workersKey, releaseOS.ZypperID, releaseOS.Version)
+	workerPlan := baseOSPlan(workerPlanName, releaseVersion, secretName)
+
+	workerPlan.Labels = map[string]string{
+		"os-upgrade": "worker",
+	}
+
+	workerPlan.Spec.Concurrency = 2
+	workerPlan.Spec.NodeSelector = &metav1.LabelSelector{
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			{
+				Key:      ControlPlaneLabel,
+				Operator: "NotIn",
+				Values: []string{
+					"true",
+				},
+			},
+		},
+	}
+
+	return workerPlan
+}
+
 func baseOSPlan(planName, releaseVersion, secretName string) *upgradecattlev1.Plan {
 	const (
 		planImage = "registry.suse.com/bci/bci-base:15.5"
