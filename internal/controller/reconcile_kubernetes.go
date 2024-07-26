@@ -56,7 +56,7 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgrade
 			return ctrl.Result{}, err
 		}
 
-		setInProgressCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "Control plane nodes are being upgraded")
+		setInProgressCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "Worker nodes are being upgraded")
 		return ctrl.Result{}, r.createPlan(ctx, upgradePlan, workerPlan)
 	}
 
