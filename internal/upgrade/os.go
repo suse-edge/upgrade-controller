@@ -65,12 +65,9 @@ func OSUpgradeSecret(releaseOS *release.OperatingSystem) (*corev1.Secret, error)
 }
 
 func OSControlPlanePlan(releaseVersion, secretName string, releaseOS *release.OperatingSystem) *upgradecattlev1.Plan {
-	const (
-		planImage = "registry.suse.com/bci/bci-base:15.5"
-	)
-
 	controlPlanePlanName := osPlanName(controlPlaneKey, releaseOS.ZypperID, releaseOS.Version)
-	controlPlanePlan := baseUpgradePlan(controlPlanePlanName)
+	controlPlanePlan := baseOSPlan(controlPlanePlanName, releaseVersion, secretName)
+
 	controlPlanePlan.Labels = map[string]string{
 		"os-upgrade": "control-plane",
 	}
@@ -107,25 +104,35 @@ func OSControlPlanePlan(releaseVersion, secretName string, releaseOS *release.Op
 		},
 	}
 
+	return controlPlanePlan
+}
+
+func baseOSPlan(planName, releaseVersion, secretName string) *upgradecattlev1.Plan {
+	const (
+		planImage = "registry.suse.com/bci/bci-base:15.5"
+	)
+
+	baseOSplan := baseUpgradePlan(planName)
+
 	secretPathRelativeToHost := fmt.Sprintf("/run/system-upgrade/secrets/%s", secretName)
 	mountPath := filepath.Join("/host", secretPathRelativeToHost)
-	controlPlanePlan.Spec.Secrets = []upgradecattlev1.SecretSpec{
+	baseOSplan.Spec.Secrets = []upgradecattlev1.SecretSpec{
 		{
 			Name: secretName,
 			Path: mountPath,
 		},
 	}
-	controlPlanePlan.Spec.Cordon = true
-	controlPlanePlan.Spec.Version = releaseVersion
+	baseOSplan.Spec.Cordon = true
+	baseOSplan.Spec.Version = releaseVersion
 
-	controlPlanePlan.Spec.JobActiveDeadlineSecs = 3600
+	baseOSplan.Spec.JobActiveDeadlineSecs = 3600
 
-	controlPlanePlan.Spec.Upgrade = &upgradecattlev1.ContainerSpec{
+	baseOSplan.Spec.Upgrade = &upgradecattlev1.ContainerSpec{
 		Image:   planImage,
 		Command: []string{"chroot", "/host"},
 		Args:    []string{"sh", filepath.Join(secretPathRelativeToHost, scriptName)},
 	}
-	return controlPlanePlan
+	return baseOSplan
 }
 
 func osPlanName(typeKey, osName, osVersion string) string {
