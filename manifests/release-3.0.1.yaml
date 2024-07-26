@@ -10,6 +10,7 @@ components:
     chart: rancher
     version: v2.8.5
     repository: https://charts.rancher.com/server-charts/prime
+    namespace: cattle-system
   operatingSystem:
     version: 6.0
     zypperID: SL-Micro
