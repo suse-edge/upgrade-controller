@@ -22,6 +22,7 @@ import (
 
 const (
 	KubernetesUpgradedCondition = "KubernetesUpgraded"
+	RancherUpgradedCondition    = "RancherUpgraded"
 
 	// UpgradePending indicates that the upgrade process has not begun.
 	UpgradePending = "Pending"

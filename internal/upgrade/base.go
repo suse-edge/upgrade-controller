@@ -3,10 +3,12 @@ package upgrade
 import (
 	upgradecattlev1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 const (
-	upgradeNamespace = "cattle-system"
+	planNamespace  = "cattle-system"
+	PlanAnnotation = "lifecycle.suse.com/upgrade-plan"
 
 	ControlPlaneLabel = "node-role.kubernetes.io/control-plane"
 )
@@ -25,7 +27,7 @@ func baseUpgradePlan(name string) *upgradecattlev1.Plan {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: upgradeNamespace,
+			Namespace: planNamespace,
 		},
 		Spec: upgradecattlev1.PlanSpec{
 			ServiceAccountName: serviceAccountName,
@@ -33,4 +35,11 @@ func baseUpgradePlan(name string) *upgradecattlev1.Plan {
 	}
 
 	return plan
+}
+
+func PlanNamespacedName(plan string) types.NamespacedName {
+	return types.NamespacedName{
+		Name:      plan,
+		Namespace: planNamespace,
+	}
 }

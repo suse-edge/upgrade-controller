@@ -6,11 +6,15 @@ components:
       version: v1.28.9+k3s1
     rke2:
       version: v1.28.9+rke2r1
+  rancher:
+    chart: rancher
+    version: v2.8.5
+    repository: https://charts.rancher.com/server-charts/prime
   operatingSystem:
     version: 6.0
     zypperID: SL-Micro
     cpeScheme: cpe:/o:suse:sl-micro:6.0
     repoGPGPath: /usr/lib/rpm/gnupg/keys/gpg-pubkey-09d9ea69-645b99ce.asc
     supportedArchs:
-    - x86_64
+      - x86_64
     # - aarch64 TODO: add when we start supporting it

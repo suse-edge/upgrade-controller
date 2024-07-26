@@ -38,6 +38,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	helmcattlev1 "github.com/k3s-io/helm-controller/pkg/apis/helm.cattle.io/v1"
 	upgradecattlev1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 	"github.com/suse-edge/upgrade-controller/internal/controller"
@@ -55,6 +56,7 @@ func init() {
 
 	utilruntime.Must(lifecyclev1alpha1.AddToScheme(scheme))
 	utilruntime.Must(upgradecattlev1.AddToScheme(scheme))
+	utilruntime.Must(helmcattlev1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
