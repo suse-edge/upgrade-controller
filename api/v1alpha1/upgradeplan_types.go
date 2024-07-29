@@ -25,6 +25,7 @@ const (
 
 	KubernetesUpgradedCondition = "KubernetesUpgraded"
 	RancherUpgradedCondition    = "RancherUpgraded"
+	LonghornUpgradedCondition   = "LonghornUpgraded"
 
 	// UpgradePending indicates that the upgrade process has not begun.
 	UpgradePending = "Pending"
