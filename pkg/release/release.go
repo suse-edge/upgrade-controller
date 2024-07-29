@@ -10,6 +10,7 @@ type Components struct {
 	Kubernetes      Kubernetes      `yaml:"kubernetes"`
 	OperatingSystem OperatingSystem `yaml:"operatingSystem"`
 	Rancher         HelmChart       `yaml:"rancher"`
+	Longhorn        HelmChart       `yaml:"longhorn"`
 }
 
 type Kubernetes struct {
