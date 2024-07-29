@@ -9,6 +9,7 @@ import (
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 	"github.com/suse-edge/upgrade-controller/internal/upgrade"
 	"github.com/suse-edge/upgrade-controller/pkg/release"
+
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -18,15 +19,25 @@ import (
 )
 
 func (r *UpgradePlanReconciler) reconcileRancher(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, rancher *release.HelmChart) (ctrl.Result, error) {
+	helmRelease, err := retrieveHelmRelease(rancher.Name)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("retrieving helm release: %w", err)
+	}
+
+	if helmRelease == nil {
+		setSkippedCondition(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition, "Rancher installation is not found")
+		return ctrl.Result{Requeue: true}, nil
+	}
+
 	chart := &helmcattlev1.HelmChart{}
 
-	if err := r.Get(ctx, upgrade.ChartNamespacedName(rancher.Name), chart); err != nil {
+	if err = r.Get(ctx, upgrade.ChartNamespacedName(helmRelease.Name), chart); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
 		}
 
-		setSkippedCondition(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition, "Rancher installation is not found")
-		return ctrl.Result{Requeue: true}, nil
+		setInProgressCondition(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition, "Rancher is being upgraded")
+		return ctrl.Result{}, r.createHelmChart(ctx, rancher, helmRelease, upgradePlan.Name)
 	}
 
 	if chart.Spec.Version != rancher.Version {
@@ -36,7 +47,7 @@ func (r *UpgradePlanReconciler) reconcileRancher(ctx context.Context, upgradePla
 	}
 
 	job := &batchv1.Job{}
-	if err := r.Get(ctx, types.NamespacedName{Name: chart.Status.JobName, Namespace: upgrade.ChartNamespace}, job); err != nil {
+	if err = r.Get(ctx, types.NamespacedName{Name: chart.Status.JobName, Namespace: upgrade.ChartNamespace}, job); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -60,20 +71,4 @@ func (r *UpgradePlanReconciler) reconcileRancher(ctx context.Context, upgradePla
 	}
 
 	return ctrl.Result{Requeue: true}, nil
-}
-
-func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, chart *helmcattlev1.HelmChart, releaseChart *release.HelmChart) error {
-	backoffLimit := int32(6)
-
-	if chart.Annotations == nil {
-		chart.Annotations = map[string]string{}
-	}
-	chart.Annotations[upgrade.PlanAnnotation] = upgradePlan.Name
-	chart.Spec.ChartContent = ""
-	chart.Spec.Chart = releaseChart.Name
-	chart.Spec.Version = releaseChart.Version
-	chart.Spec.Repo = releaseChart.Repository
-	chart.Spec.BackOffLimit = &backoffLimit
-
-	return r.Update(ctx, chart)
 }

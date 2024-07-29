@@ -47,6 +47,7 @@ rules:
   resources:
   - helmcharts
   verbs:
+  - create
   - get
   - list
   - update
