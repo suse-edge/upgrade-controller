@@ -26,11 +26,11 @@ func kubernetesUpgradeImage(version string) string {
 	return rke2UpgradeImage
 }
 
-func KubernetesControlPlanePlan(version string) *upgradecattlev1.Plan {
+func KubernetesControlPlanePlan(version string, drain bool) *upgradecattlev1.Plan {
 	controlPlanePlanName := kubernetesPlanName(controlPlaneKey, version)
 	upgradeImage := kubernetesUpgradeImage(version)
 
-	controlPlanePlan := baseUpgradePlan(controlPlanePlanName)
+	controlPlanePlan := baseUpgradePlan(controlPlanePlanName, drain)
 	controlPlanePlan.Labels = map[string]string{
 		"k8s-upgrade": "control-plane",
 	}
@@ -75,12 +75,12 @@ func KubernetesControlPlanePlan(version string) *upgradecattlev1.Plan {
 	return controlPlanePlan
 }
 
-func KubernetesWorkerPlan(version string) *upgradecattlev1.Plan {
+func KubernetesWorkerPlan(version string, drain bool) *upgradecattlev1.Plan {
 	controlPlanePlanName := kubernetesPlanName(controlPlaneKey, version)
 	workerPlanName := kubernetesPlanName(workersKey, version)
 	upgradeImage := kubernetesUpgradeImage(version)
 
-	workerPlan := baseUpgradePlan(workerPlanName)
+	workerPlan := baseUpgradePlan(workerPlanName, drain)
 	workerPlan.Labels = map[string]string{
 		"k8s-upgrade": "worker",
 	}
@@ -108,9 +108,6 @@ func KubernetesWorkerPlan(version string) *upgradecattlev1.Plan {
 	}
 	workerPlan.Spec.Version = version
 	workerPlan.Spec.Cordon = true
-	workerPlan.Spec.Drain = &upgradecattlev1.DrainSpec{
-		Force: true,
-	}
 
 	return workerPlan
 }

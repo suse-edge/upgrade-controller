@@ -64,9 +64,9 @@ func OSUpgradeSecret(releaseOS *release.OperatingSystem) (*corev1.Secret, error)
 	return secret, nil
 }
 
-func OSControlPlanePlan(releaseVersion, secretName string, releaseOS *release.OperatingSystem) *upgradecattlev1.Plan {
+func OSControlPlanePlan(releaseVersion, secretName string, releaseOS *release.OperatingSystem, drain bool) *upgradecattlev1.Plan {
 	controlPlanePlanName := osPlanName(controlPlaneKey, releaseOS.ZypperID, releaseOS.Version)
-	controlPlanePlan := baseOSPlan(controlPlanePlanName, releaseVersion, secretName)
+	controlPlanePlan := baseOSPlan(controlPlanePlanName, releaseVersion, secretName, drain)
 
 	controlPlanePlan.Labels = map[string]string{
 		"os-upgrade": "control-plane",
@@ -107,9 +107,9 @@ func OSControlPlanePlan(releaseVersion, secretName string, releaseOS *release.Op
 	return controlPlanePlan
 }
 
-func OSWorkerPlan(releaseVersion, secretName string, releaseOS *release.OperatingSystem) *upgradecattlev1.Plan {
+func OSWorkerPlan(releaseVersion, secretName string, releaseOS *release.OperatingSystem, drain bool) *upgradecattlev1.Plan {
 	workerPlanName := osPlanName(workersKey, releaseOS.ZypperID, releaseOS.Version)
-	workerPlan := baseOSPlan(workerPlanName, releaseVersion, secretName)
+	workerPlan := baseOSPlan(workerPlanName, releaseVersion, secretName, drain)
 
 	workerPlan.Labels = map[string]string{
 		"os-upgrade": "worker",
@@ -131,12 +131,12 @@ func OSWorkerPlan(releaseVersion, secretName string, releaseOS *release.Operatin
 	return workerPlan
 }
 
-func baseOSPlan(planName, releaseVersion, secretName string) *upgradecattlev1.Plan {
+func baseOSPlan(planName, releaseVersion, secretName string, drain bool) *upgradecattlev1.Plan {
 	const (
 		planImage = "registry.suse.com/bci/bci-base:15.5"
 	)
 
-	baseOSplan := baseUpgradePlan(planName)
+	baseOSplan := baseUpgradePlan(planName, drain)
 
 	secretPathRelativeToHost := fmt.Sprintf("/run/system-upgrade/secrets/%s", secretName)
 	mountPath := filepath.Join("/host", secretPathRelativeToHost)

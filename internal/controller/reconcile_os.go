@@ -29,7 +29,8 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 		return ctrl.Result{}, r.createSecret(ctx, upgradePlan, secret)
 	}
 
-	controlPlanePlan := upgrade.OSControlPlanePlan(release.ReleaseVersion, secret.Name, &release.Components.OperatingSystem)
+	drainControlPlane, drainWorker := parseDrainOptions(upgradePlan)
+	controlPlanePlan := upgrade.OSControlPlanePlan(release.ReleaseVersion, secret.Name, &release.Components.OperatingSystem, drainControlPlane)
 	if err = r.Get(ctx, client.ObjectKeyFromObject(controlPlanePlan), controlPlanePlan); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
@@ -57,7 +58,7 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	workerPlan := upgrade.OSWorkerPlan(release.ReleaseVersion, secret.Name, &release.Components.OperatingSystem)
+	workerPlan := upgrade.OSWorkerPlan(release.ReleaseVersion, secret.Name, &release.Components.OperatingSystem, drainWorker)
 	if err = r.Get(ctx, client.ObjectKeyFromObject(workerPlan), workerPlan); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
