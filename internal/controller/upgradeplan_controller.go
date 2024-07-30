@@ -191,6 +191,10 @@ func setSkippedCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, mes
 	meta.SetStatusCondition(&plan.Status.Conditions, condition)
 }
 
+func versionAlreadyInstalledMessage(plan *lifecyclev1alpha1.UpgradePlan) string {
+	return fmt.Sprintf("Component version is the same in release %s", plan.Spec.ReleaseVersion)
+}
+
 func (r *UpgradePlanReconciler) findUpgradePlanFromJob(ctx context.Context, job client.Object) []reconcile.Request {
 	jobLabels := job.GetLabels()
 	chartName, ok := jobLabels[chart.Label]

@@ -66,6 +66,7 @@ func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan
 		chart.Annotations = map[string]string{}
 	}
 	chart.Annotations[upgrade.PlanAnnotation] = upgradePlan.Name
+	chart.Annotations[upgrade.ReleaseAnnotation] = upgradePlan.Spec.ReleaseVersion
 	chart.Spec.ChartContent = ""
 	chart.Spec.Chart = releaseChart.Name
 	chart.Spec.Version = releaseChart.Version
@@ -77,7 +78,7 @@ func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan
 
 // Creates a HelmChart resource in order to trigger an upgrade
 // using the information from an existing Helm release.
-func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, releaseChart *release.HelmChart, installedChart *helmrelease.Release, upgradePlanName string) error {
+func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, installedChart *helmrelease.Release, releaseChart *release.HelmChart) error {
 	backoffLimit := int32(6)
 	var values []byte
 
@@ -99,7 +100,8 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, releaseChar
 			Name:      releaseChart.Name,
 			Namespace: upgrade.ChartNamespace,
 			Annotations: map[string]string{
-				upgrade.PlanAnnotation: upgradePlanName,
+				upgrade.PlanAnnotation:    upgradePlan.Name,
+				upgrade.ReleaseAnnotation: upgradePlan.Spec.ReleaseVersion,
 			},
 		},
 		Spec: helmcattlev1.HelmChartSpec{

@@ -36,14 +36,24 @@ func (r *UpgradePlanReconciler) reconcileLonghorn(ctx context.Context, upgradePl
 			return ctrl.Result{}, err
 		}
 
+		if helmRelease.Chart.Metadata.Version == longhorn.Version {
+			setSkippedCondition(upgradePlan, lifecyclev1alpha1.LonghornUpgradedCondition, versionAlreadyInstalledMessage(upgradePlan))
+			return ctrl.Result{Requeue: true}, nil
+		}
+
 		setInProgressCondition(upgradePlan, lifecyclev1alpha1.LonghornUpgradedCondition, "Longhorn is being upgraded")
-		return ctrl.Result{}, r.createHelmChart(ctx, longhorn, helmRelease, upgradePlan.Name)
+		return ctrl.Result{}, r.createHelmChart(ctx, upgradePlan, helmRelease, longhorn)
 	}
 
 	if chart.Spec.Version != longhorn.Version {
 		setInProgressCondition(upgradePlan, lifecyclev1alpha1.LonghornUpgradedCondition, "Longhorn is being upgraded")
-
 		return ctrl.Result{}, r.updateHelmChart(ctx, upgradePlan, chart, longhorn)
+	}
+
+	releaseVersion := chart.Annotations[upgrade.ReleaseAnnotation]
+	if releaseVersion != upgradePlan.Spec.ReleaseVersion {
+		setSkippedCondition(upgradePlan, lifecyclev1alpha1.LonghornUpgradedCondition, versionAlreadyInstalledMessage(upgradePlan))
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	job := &batchv1.Job{}

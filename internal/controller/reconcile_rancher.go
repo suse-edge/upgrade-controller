@@ -36,14 +36,24 @@ func (r *UpgradePlanReconciler) reconcileRancher(ctx context.Context, upgradePla
 			return ctrl.Result{}, err
 		}
 
+		if helmRelease.Chart.Metadata.Version == rancher.Version {
+			setSkippedCondition(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition, versionAlreadyInstalledMessage(upgradePlan))
+			return ctrl.Result{Requeue: true}, nil
+		}
+
 		setInProgressCondition(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition, "Rancher is being upgraded")
-		return ctrl.Result{}, r.createHelmChart(ctx, rancher, helmRelease, upgradePlan.Name)
+		return ctrl.Result{}, r.createHelmChart(ctx, upgradePlan, helmRelease, rancher)
 	}
 
 	if chart.Spec.Version != rancher.Version {
 		setInProgressCondition(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition, "Rancher is being upgraded")
-
 		return ctrl.Result{}, r.updateHelmChart(ctx, upgradePlan, chart, rancher)
+	}
+
+	releaseVersion := chart.Annotations[upgrade.ReleaseAnnotation]
+	if releaseVersion != upgradePlan.Spec.ReleaseVersion {
+		setSkippedCondition(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition, versionAlreadyInstalledMessage(upgradePlan))
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	job := &batchv1.Job{}
