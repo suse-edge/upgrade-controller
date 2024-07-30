@@ -48,6 +48,15 @@ type UpgradePlanSpec struct {
 	// ReleaseVersion specifies the target version for platform upgrade.
 	// The version format is X.Y.Z, for example "3.0.2".
 	ReleaseVersion string `json:"releaseVersion"`
+	// +optional
+	Drain *Drain `json:"drain"`
+}
+
+type Drain struct {
+	// +optional
+	ControlPlanes *bool `json:"controlPlanes"`
+	// +optional
+	Workers *bool `json:"workers"`
 }
 
 // UpgradePlanStatus defines the observed state of UpgradePlan
