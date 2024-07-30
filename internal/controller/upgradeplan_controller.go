@@ -166,21 +166,21 @@ func isHelmUpgradeFinished(plan *lifecyclev1alpha1.UpgradePlan, conditionType st
 	return false
 }
 
-func parseDrainOptions(plan *lifecyclev1alpha1.UpgradePlan) (drainControlPlanes bool, drainWorkers bool) {
-	drainControlPlanes = true
-	drainWorkers = true
+func parseDrainOptions(plan *lifecyclev1alpha1.UpgradePlan) (drainControlPlane bool, drainWorker bool) {
+	drainControlPlane = true
+	drainWorker = true
 
 	if plan.Spec.Drain != nil {
-		if plan.Spec.Drain.ControlPlanes != nil {
-			drainControlPlanes = *plan.Spec.Drain.ControlPlanes
+		if plan.Spec.Drain.ControlPlane != nil {
+			drainControlPlane = *plan.Spec.Drain.ControlPlane
 		}
 
-		if plan.Spec.Drain.Workers != nil {
-			drainWorkers = *plan.Spec.Drain.Workers
+		if plan.Spec.Drain.Worker != nil {
+			drainWorker = *plan.Spec.Drain.Worker
 		}
 	}
 
-	return drainControlPlanes, drainWorkers
+	return drainControlPlane, drainWorker
 }
 
 func setPendingCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, message string) {

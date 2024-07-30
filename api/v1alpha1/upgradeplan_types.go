@@ -56,9 +56,9 @@ type UpgradePlanSpec struct {
 
 type Drain struct {
 	// +optional
-	ControlPlanes *bool `json:"controlPlanes"`
+	ControlPlane *bool `json:"controlPlane"`
 	// +optional
-	Workers *bool `json:"workers"`
+	Worker *bool `json:"worker"`
 }
 
 // UpgradePlanStatus defines the observed state of UpgradePlan

@@ -44,9 +44,9 @@ spec:
                   Drain specifies whether control-plane and worker nodes should be drained.
                   If left unspecified, drain is done on both control-plane and worker nodes by default.
                 properties:
-                  controlPlanes:
+                  controlPlane:
                     type: boolean
-                  workers:
+                  worker:
                     type: boolean
                 type: object
               releaseVersion:
