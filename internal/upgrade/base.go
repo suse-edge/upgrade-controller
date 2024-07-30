@@ -1,6 +1,8 @@
 package upgrade
 
 import (
+	"time"
+
 	upgradecattlev1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -16,7 +18,7 @@ const (
 	ControlPlaneLabel = "node-role.kubernetes.io/control-plane"
 )
 
-func baseUpgradePlan(name string) *upgradecattlev1.Plan {
+func baseUpgradePlan(name string, drain bool) *upgradecattlev1.Plan {
 	const (
 		kind               = "Plan"
 		apiVersion         = "upgrade.cattle.io/v1"
@@ -35,6 +37,18 @@ func baseUpgradePlan(name string) *upgradecattlev1.Plan {
 		Spec: upgradecattlev1.PlanSpec{
 			ServiceAccountName: serviceAccountName,
 		},
+	}
+
+	if drain {
+		timeout := 15 * time.Minute
+		deleteEmptyDirData := true
+		ignoreDaemonSets := true
+		plan.Spec.Drain = &upgradecattlev1.DrainSpec{
+			Timeout:            &timeout,
+			DeleteEmptydirData: &deleteEmptyDirData,
+			IgnoreDaemonSets:   &ignoreDaemonSets,
+			Force:              true,
+		}
 	}
 
 	return plan
