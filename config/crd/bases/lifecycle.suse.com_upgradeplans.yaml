@@ -40,6 +40,9 @@ spec:
             description: UpgradePlanSpec defines the desired state of UpgradePlan
             properties:
               drain:
+                description: |-
+                  Drain specifies whether control-plane and worker nodes should be drained.
+                  If left unspecified, drain is done on both control-plane and worker nodes by default.
                 properties:
                   controlPlanes:
                     type: boolean

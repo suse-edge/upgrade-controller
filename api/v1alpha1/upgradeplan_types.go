@@ -48,6 +48,8 @@ type UpgradePlanSpec struct {
 	// ReleaseVersion specifies the target version for platform upgrade.
 	// The version format is X.Y.Z, for example "3.0.2".
 	ReleaseVersion string `json:"releaseVersion"`
+	// Drain specifies whether control-plane and worker nodes should be drained.
+	// If left unspecified, drain is done on both control-plane and worker nodes by default.
 	// +optional
 	Drain *Drain `json:"drain"`
 }
