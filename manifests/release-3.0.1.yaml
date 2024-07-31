@@ -16,6 +16,10 @@ components:
     version: v1.6.1
     repository: https://charts.longhorn.io
     namespace: longhorn-system
+  metallb:
+    chart: oci://registry.suse.com/edge/metallb-chart
+    version: 0.14.3
+    namespace: metallb-system
   operatingSystem:
     version: 6.0
     zypperID: SL-Micro
