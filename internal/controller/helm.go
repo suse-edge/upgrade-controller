@@ -196,6 +196,6 @@ func evaluateHelmChartState(state upgrade.HelmChartState) (setCondition setCondi
 	case upgrade.ChartStateFailed:
 		return setFailedCondition, true
 	default:
-		return nil, false
+		return setErrorCondition, false
 	}
 }

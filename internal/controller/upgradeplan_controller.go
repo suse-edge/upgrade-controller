@@ -190,6 +190,11 @@ func setPendingCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, mes
 	meta.SetStatusCondition(&plan.Status.Conditions, condition)
 }
 
+func setErrorCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, message string) {
+	condition := metav1.Condition{Type: conditionType, Status: metav1.ConditionUnknown, Reason: lifecyclev1alpha1.UpgradeError, Message: message}
+	meta.SetStatusCondition(&plan.Status.Conditions, condition)
+}
+
 func setInProgressCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, message string) {
 	condition := metav1.Condition{Type: conditionType, Status: metav1.ConditionFalse, Reason: lifecyclev1alpha1.UpgradeInProgress, Message: message}
 	meta.SetStatusCondition(&plan.Status.Conditions, condition)
