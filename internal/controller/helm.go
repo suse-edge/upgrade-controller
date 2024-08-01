@@ -104,7 +104,7 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan
 			APIVersion: "helm.cattle.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      releaseChart.Name,
+			Name:      installedChart.Name,
 			Namespace: upgrade.ChartNamespace,
 			Annotations: map[string]string{
 				upgrade.PlanAnnotation:    upgradePlan.Name,
