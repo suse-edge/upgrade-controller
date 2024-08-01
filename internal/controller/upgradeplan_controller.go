@@ -183,8 +183,15 @@ func parseDrainOptions(plan *lifecyclev1alpha1.UpgradePlan) (drainControlPlane b
 	return drainControlPlane, drainWorker
 }
 
+type setCondition func(plan *lifecyclev1alpha1.UpgradePlan, conditionType string, message string)
+
 func setPendingCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, message string) {
 	condition := metav1.Condition{Type: conditionType, Status: metav1.ConditionUnknown, Reason: lifecyclev1alpha1.UpgradePending, Message: message}
+	meta.SetStatusCondition(&plan.Status.Conditions, condition)
+}
+
+func setErrorCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, message string) {
+	condition := metav1.Condition{Type: conditionType, Status: metav1.ConditionUnknown, Reason: lifecyclev1alpha1.UpgradeError, Message: message}
 	meta.SetStatusCondition(&plan.Status.Conditions, condition)
 }
 
@@ -206,10 +213,6 @@ func setFailedCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, mess
 func setSkippedCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, message string) {
 	condition := metav1.Condition{Type: conditionType, Status: metav1.ConditionFalse, Reason: lifecyclev1alpha1.UpgradeSkipped, Message: message}
 	meta.SetStatusCondition(&plan.Status.Conditions, condition)
-}
-
-func versionAlreadyInstalledMessage(plan *lifecyclev1alpha1.UpgradePlan) string {
-	return fmt.Sprintf("Component version is the same in release %s", plan.Spec.ReleaseVersion)
 }
 
 func (r *UpgradePlanReconciler) findUpgradePlanFromJob(ctx context.Context, job client.Object) []reconcile.Request {

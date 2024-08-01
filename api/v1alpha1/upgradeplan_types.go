@@ -27,6 +27,9 @@ const (
 	RancherUpgradedCondition    = "RancherUpgraded"
 	LonghornUpgradedCondition   = "LonghornUpgraded"
 
+	// UpgradeError indicates that the upgrade process has encountered a transient error.
+	UpgradeError = "Error"
+
 	// UpgradePending indicates that the upgrade process has not begun.
 	UpgradePending = "Pending"
 
@@ -39,7 +42,7 @@ const (
 	// UpgradeSucceeded indicates that the upgrade process has been successful.
 	UpgradeSucceeded = "Succeeded"
 
-	// UpgradeFailed indicates that an error occurred during the upgrade process.
+	// UpgradeFailed indicates that the upgrade process has failed.
 	UpgradeFailed = "Failed"
 )
 
