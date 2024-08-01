@@ -125,7 +125,8 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan
 }
 
 func (r *UpgradePlanReconciler) upgradeHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, releaseChart *release.HelmChart) (upgrade.HelmChartState, error) {
-	helmRelease, err := retrieveHelmRelease(releaseChart.Name)
+	helmReleaseName := retrieveHelmReleaseName(releaseChart)
+	helmRelease, err := retrieveHelmRelease(helmReleaseName)
 	if err != nil {
 		if errors.Is(err, helmdriver.ErrReleaseNotFound) {
 			return upgrade.ChartStateNotInstalled, nil
@@ -183,6 +184,14 @@ func (r *UpgradePlanReconciler) upgradeHelmChart(ctx context.Context, upgradePla
 		"jobStatus", condition.Message)
 
 	return upgrade.ChartStateFailed, nil
+}
+
+func retrieveHelmReleaseName(releaseChart *release.HelmChart) string {
+	if releaseChart.ReleaseName != "" {
+		return releaseChart.ReleaseName
+	}
+
+	return releaseChart.Name
 }
 
 func evaluateHelmChartState(state upgrade.HelmChartState) (setCondition setCondition, requeue bool) {

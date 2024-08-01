@@ -17,6 +17,7 @@ components:
     repository: https://charts.longhorn.io
     namespace: longhorn-system
   metallb:
+    releaseName: metallb
     chart: oci://registry.suse.com/edge/metallb-chart
     version: 0.14.3
     namespace: metallb-system

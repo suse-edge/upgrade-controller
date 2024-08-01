@@ -33,8 +33,9 @@ type OperatingSystem struct {
 }
 
 type HelmChart struct {
-	Name       string `yaml:"chart"`
-	Repository string `yaml:"repository"`
-	Version    string `yaml:"version"`
-	Namespace  string `yaml:"namespace"`
+	ReleaseName string `yaml:"releaseName"`
+	Name        string `yaml:"chart"`
+	Repository  string `yaml:"repository"`
+	Version     string `yaml:"version"`
+	Namespace   string `yaml:"namespace"`
 }
