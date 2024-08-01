@@ -200,3 +200,7 @@ func evaluateHelmChartState(state upgrade.HelmChartState) (setCondition setCondi
 		return setErrorCondition, false
 	}
 }
+
+func dependentHelmChartMissingMessage(dependency, dependent string) string {
+	return fmt.Sprintf("Chart %s was successfully upgraded but chart %s is not installed", dependency, dependent)
+}
