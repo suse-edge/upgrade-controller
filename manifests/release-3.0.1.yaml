@@ -7,11 +7,13 @@ components:
     rke2:
       version: v1.28.9+rke2r1
   rancher:
+    releaseName: rancher
     chart: rancher
     version: v2.8.5
     repository: https://charts.rancher.com/server-charts/prime
     namespace: cattle-system
   longhorn:
+    releaseName: longhorn
     chart: longhorn
     version: v1.6.1
     repository: https://charts.longhorn.io
