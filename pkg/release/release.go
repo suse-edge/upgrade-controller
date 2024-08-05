@@ -11,6 +11,7 @@ type Components struct {
 	OperatingSystem OperatingSystem `yaml:"operatingSystem"`
 	Rancher         HelmChart       `yaml:"rancher"`
 	Longhorn        HelmChart       `yaml:"longhorn"`
+	MetalLB         HelmChart       `yaml:"metallb"`
 }
 
 type Kubernetes struct {
@@ -32,8 +33,9 @@ type OperatingSystem struct {
 }
 
 type HelmChart struct {
-	Name       string `yaml:"chart"`
-	Repository string `yaml:"repository"`
-	Version    string `yaml:"version"`
-	Namespace  string `yaml:"namespace"`
+	ReleaseName string `yaml:"releaseName"`
+	Name        string `yaml:"chart"`
+	Repository  string `yaml:"repository"`
+	Version     string `yaml:"version"`
+	Namespace   string `yaml:"namespace"`
 }

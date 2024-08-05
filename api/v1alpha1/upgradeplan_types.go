@@ -26,6 +26,7 @@ const (
 	KubernetesUpgradedCondition = "KubernetesUpgraded"
 	RancherUpgradedCondition    = "RancherUpgraded"
 	LonghornUpgradedCondition   = "LonghornUpgraded"
+	MetalLBUpgradedCondition    = "MetalLBUpgraded"
 
 	// UpgradeError indicates that the upgrade process has encountered a transient error.
 	UpgradeError = "Error"
