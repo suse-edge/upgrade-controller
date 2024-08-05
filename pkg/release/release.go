@@ -13,6 +13,7 @@ type Components struct {
 	Longhorn        HelmChart       `yaml:"longhorn"`
 	MetalLB         HelmChart       `yaml:"metallb"`
 	CDI             HelmChart       `yaml:"cdi"`
+	KubeVirt        HelmChart       `yaml:"kubevirt"`
 }
 
 type Kubernetes struct {

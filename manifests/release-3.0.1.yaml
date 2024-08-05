@@ -24,6 +24,10 @@ components:
     releaseName: cdi
     chart: oci://registry.suse.com/edge/cdi-chart
     version: 0.2.3
+  kubevirt:
+    releaseName: kubevirt
+    chart: oci://registry.suse.com/edge/kubevirt-chart
+    version: 0.2.4
   operatingSystem:
     version: 6.0
     zypperID: SL-Micro
