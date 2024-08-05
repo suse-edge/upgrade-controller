@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -158,7 +159,7 @@ func (r *UpgradePlanReconciler) upgradeHelmChart(ctx context.Context, upgradePla
 
 	job := &batchv1.Job{}
 	if err = r.Get(ctx, types.NamespacedName{Name: chart.Status.JobName, Namespace: upgrade.ChartNamespace}, job); err != nil {
-		return upgrade.ChartStateUnknown, err
+		return upgrade.ChartStateUnknown, client.IgnoreNotFound(err)
 	}
 
 	idx := slices.IndexFunc(job.Status.Conditions, func(condition batchv1.JobCondition) bool {
