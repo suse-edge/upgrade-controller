@@ -98,6 +98,7 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.CDIUpgradedCondition, "CDI upgrade is not yet started")
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubevirtUpgradedCondition, "KubeVirt upgrade is not yet started")
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.NeuVectorUpgradedCondition, "NeuVector upgrade is not yet started")
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.EndpointCopierUpgradedCondition, "EndpointCopierOperator upgrade is not yet started")
 
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -119,6 +120,8 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 		return r.reconcileKubevirt(ctx, upgradePlan, &release.Components.KubeVirt)
 	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.NeuVectorUpgradedCondition):
 		return r.reconcileNeuVector(ctx, upgradePlan, &release.Components.NeuVector)
+	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.EndpointCopierUpgradedCondition):
+		return r.reconcileEndpointCopier(ctx, upgradePlan, &release.Components.EndpointCopierOperator)
 	}
 
 	logger := log.FromContext(ctx)

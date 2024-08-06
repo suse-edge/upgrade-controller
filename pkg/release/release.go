@@ -7,14 +7,15 @@ type Release struct {
 }
 
 type Components struct {
-	Kubernetes      Kubernetes      `yaml:"kubernetes"`
-	OperatingSystem OperatingSystem `yaml:"operatingSystem"`
-	Rancher         HelmChart       `yaml:"rancher"`
-	Longhorn        HelmChart       `yaml:"longhorn"`
-	MetalLB         HelmChart       `yaml:"metallb"`
-	CDI             HelmChart       `yaml:"cdi"`
-	KubeVirt        HelmChart       `yaml:"kubevirt"`
-	NeuVector       NeuVector       `yaml:"neuvector"`
+	Kubernetes             Kubernetes      `yaml:"kubernetes"`
+	OperatingSystem        OperatingSystem `yaml:"operatingSystem"`
+	Rancher                HelmChart       `yaml:"rancher"`
+	Longhorn               HelmChart       `yaml:"longhorn"`
+	MetalLB                HelmChart       `yaml:"metallb"`
+	CDI                    HelmChart       `yaml:"cdi"`
+	KubeVirt               HelmChart       `yaml:"kubevirt"`
+	NeuVector              NeuVector       `yaml:"neuvector"`
+	EndpointCopierOperator HelmChart       `yaml:"endpointCopierOperator"`
 }
 
 type Kubernetes struct {

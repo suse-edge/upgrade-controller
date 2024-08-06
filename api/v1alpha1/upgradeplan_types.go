@@ -23,13 +23,14 @@ import (
 const (
 	OperatingSystemUpgradedCondition = "OSUpgraded"
 
-	KubernetesUpgradedCondition = "KubernetesUpgraded"
-	RancherUpgradedCondition    = "RancherUpgraded"
-	LonghornUpgradedCondition   = "LonghornUpgraded"
-	MetalLBUpgradedCondition    = "MetalLBUpgraded"
-	CDIUpgradedCondition        = "CDIUpgraded"
-	KubevirtUpgradedCondition   = "KubeVirtUpgraded"
-	NeuVectorUpgradedCondition  = "NeuVectorUpgraded"
+	KubernetesUpgradedCondition     = "KubernetesUpgraded"
+	RancherUpgradedCondition        = "RancherUpgraded"
+	LonghornUpgradedCondition       = "LonghornUpgraded"
+	MetalLBUpgradedCondition        = "MetalLBUpgraded"
+	CDIUpgradedCondition            = "CDIUpgraded"
+	KubevirtUpgradedCondition       = "KubeVirtUpgraded"
+	NeuVectorUpgradedCondition      = "NeuVectorUpgraded"
+	EndpointCopierUpgradedCondition = "EndpointCopierOperatorUpgraded"
 
 	// UpgradeError indicates that the upgrade process has encountered a transient error.
 	UpgradeError = "Error"
