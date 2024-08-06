@@ -43,6 +43,15 @@ components:
     releaseName: endpoint-copier-operator
     chart: oci://registry.suse.com/edge/endpoint-copier-operator-chart
     version: 0.2.0
+  elemental:
+    crd:
+      releaseName: elemental-operator-crds
+      chart: oci://registry.suse.com/rancher/elemental-operator-crds-chart
+      version: 1.4.4
+    operator:
+      releaseName: elemental-operator
+      chart: oci://registry.suse.com/rancher/elemental-operator-chart
+      version: 1.4.4
   operatingSystem:
     version: 6.0
     zypperID: SL-Micro

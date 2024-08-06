@@ -16,6 +16,7 @@ type Components struct {
 	KubeVirt               HelmChart       `yaml:"kubevirt"`
 	NeuVector              NeuVector       `yaml:"neuvector"`
 	EndpointCopierOperator HelmChart       `yaml:"endpointCopierOperator"`
+	Elemental              Elemental       `yaml:"elemental"`
 }
 
 type Kubernetes struct {
@@ -46,4 +47,9 @@ type HelmChart struct {
 type NeuVector struct {
 	CRD       HelmChart `yaml:"crd"`
 	NeuVector HelmChart `yaml:"neuvector"`
+}
+
+type Elemental struct {
+	CRD      HelmChart `yaml:"crd"`
+	Operator HelmChart `yaml:"operator"`
 }
