@@ -16,7 +16,7 @@ func (r *UpgradePlanReconciler) reconcileMetalLB(ctx context.Context, upgradePla
 	}
 
 	setCondition, requeue := evaluateHelmChartState(state)
-	setCondition(upgradePlan, lifecyclev1alpha1.MetalLBUpgradedCondition, state.Message())
+	setCondition(upgradePlan, lifecyclev1alpha1.MetalLBUpgradedCondition, state.FormattedMessage(metallb.ReleaseName))
 
 	return ctrl.Result{Requeue: requeue}, nil
 }

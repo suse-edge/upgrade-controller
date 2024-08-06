@@ -16,7 +16,7 @@ func (r *UpgradePlanReconciler) reconcileKubevirt(ctx context.Context, upgradePl
 	}
 
 	setCondition, requeue := evaluateHelmChartState(state)
-	setCondition(upgradePlan, lifecyclev1alpha1.KubevirtUpgradedCondition, state.Message())
+	setCondition(upgradePlan, lifecyclev1alpha1.KubevirtUpgradedCondition, state.FormattedMessage(kubevirt.ReleaseName))
 
 	return ctrl.Result{Requeue: requeue}, nil
 }
