@@ -97,6 +97,7 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.MetalLBUpgradedCondition, "MetalLB upgrade is not yet started")
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.CDIUpgradedCondition, "CDI upgrade is not yet started")
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubevirtUpgradedCondition, "KubeVirt upgrade is not yet started")
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.NeuVectorUpgradedCondition, "NeuVector upgrade is not yet started")
 
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -116,6 +117,8 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 		return r.reconcileCDI(ctx, upgradePlan, &release.Components.CDI)
 	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.KubevirtUpgradedCondition):
 		return r.reconcileKubevirt(ctx, upgradePlan, &release.Components.KubeVirt)
+	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.NeuVectorUpgradedCondition):
+		return r.reconcileNeuVector(ctx, upgradePlan, &release.Components.NeuVector)
 	}
 
 	logger := log.FromContext(ctx)
