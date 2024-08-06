@@ -99,6 +99,7 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubevirtUpgradedCondition, upgradePendingMessage("KubeVirt"))
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.NeuVectorUpgradedCondition, upgradePendingMessage("NeuVector"))
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.EndpointCopierUpgradedCondition, upgradePendingMessage("EndpointCopierOperator"))
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.ElementalUpgradedCondition, upgradePendingMessage("Elemental"))
 
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -122,6 +123,8 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 		return r.reconcileNeuVector(ctx, upgradePlan, &release.Components.NeuVector)
 	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.EndpointCopierUpgradedCondition):
 		return r.reconcileEndpointCopier(ctx, upgradePlan, &release.Components.EndpointCopierOperator)
+	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.ElementalUpgradedCondition):
+		return r.reconcileElemental(ctx, upgradePlan, &release.Components.Elemental)
 	}
 
 	logger := log.FromContext(ctx)
