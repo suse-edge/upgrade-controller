@@ -28,7 +28,7 @@ const (
 	LonghornUpgradedCondition   = "LonghornUpgraded"
 	MetalLBUpgradedCondition    = "MetalLBUpgraded"
 	CDIUpgradedCondition        = "CDIUpgraded"
-	KubevirtUpgradedCondition   = "KubevirtUpgraded"
+	KubevirtUpgradedCondition   = "KubeVirtUpgraded"
 
 	// UpgradeError indicates that the upgrade process has encountered a transient error.
 	UpgradeError = "Error"

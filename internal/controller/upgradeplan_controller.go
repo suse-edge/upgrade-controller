@@ -96,7 +96,7 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.LonghornUpgradedCondition, "Longhorn upgrade is not yet started")
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.MetalLBUpgradedCondition, "MetalLB upgrade is not yet started")
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.CDIUpgradedCondition, "CDI upgrade is not yet started")
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubevirtUpgradedCondition, "Kubevirt upgrade is not yet started")
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubevirtUpgradedCondition, "KubeVirt upgrade is not yet started")
 
 		return ctrl.Result{Requeue: true}, nil
 	}
