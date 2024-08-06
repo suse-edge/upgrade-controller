@@ -40,7 +40,7 @@ type OperatingSystem struct {
 type HelmChart struct {
 	ReleaseName string `yaml:"releaseName"`
 	Name        string `yaml:"chart"`
-	Repository  string `yaml:"repository"`
+	Repository  string `yaml:"repository,omitempty"`
 	Version     string `yaml:"version"`
 }
 
