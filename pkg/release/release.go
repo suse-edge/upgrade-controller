@@ -14,6 +14,7 @@ type Components struct {
 	MetalLB         HelmChart       `yaml:"metallb"`
 	CDI             HelmChart       `yaml:"cdi"`
 	KubeVirt        HelmChart       `yaml:"kubevirt"`
+	NeuVector       NeuVector       `yaml:"neuvector"`
 }
 
 type Kubernetes struct {
@@ -39,4 +40,9 @@ type HelmChart struct {
 	Name        string `yaml:"chart"`
 	Repository  string `yaml:"repository"`
 	Version     string `yaml:"version"`
+}
+
+type NeuVector struct {
+	CRD       HelmChart `yaml:"crd"`
+	NeuVector HelmChart `yaml:"neuvector"`
 }

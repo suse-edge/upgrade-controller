@@ -28,6 +28,17 @@ components:
     releaseName: kubevirt
     chart: oci://registry.suse.com/edge/kubevirt-chart
     version: 0.2.4
+  neuvector:
+    crd:
+      releaseName: neuvector-crd
+      chart: neuvector-crd
+      version: 103.0.4+up2.7.7
+      repository: https://charts.rancher.io
+    neuvector:
+      releaseName: neuvector
+      chart: neuvector
+      version: 103.0.4+up2.7.7
+      repository: https://charts.rancher.io
   operatingSystem:
     version: 6.0
     zypperID: SL-Micro
