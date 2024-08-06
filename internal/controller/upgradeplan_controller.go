@@ -90,15 +90,15 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 	}
 
 	if len(upgradePlan.Status.Conditions) == 0 {
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "OS upgrade is not yet started")
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "Kubernetes upgrade is not yet started")
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition, "Rancher upgrade is not yet started")
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.LonghornUpgradedCondition, "Longhorn upgrade is not yet started")
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.MetalLBUpgradedCondition, "MetalLB upgrade is not yet started")
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.CDIUpgradedCondition, "CDI upgrade is not yet started")
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubevirtUpgradedCondition, "KubeVirt upgrade is not yet started")
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.NeuVectorUpgradedCondition, "NeuVector upgrade is not yet started")
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.EndpointCopierUpgradedCondition, "EndpointCopierOperator upgrade is not yet started")
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, upgradePendingMessage("OS"))
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, upgradePendingMessage("Kubernetes"))
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition, upgradePendingMessage("Rancher"))
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.LonghornUpgradedCondition, upgradePendingMessage("Longhorn"))
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.MetalLBUpgradedCondition, upgradePendingMessage("MetalLB"))
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.CDIUpgradedCondition, upgradePendingMessage("CDI"))
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubevirtUpgradedCondition, upgradePendingMessage("KubeVirt"))
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.NeuVectorUpgradedCondition, upgradePendingMessage("NeuVector"))
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.EndpointCopierUpgradedCondition, upgradePendingMessage("EndpointCopierOperator"))
 
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -196,6 +196,10 @@ func parseDrainOptions(plan *lifecyclev1alpha1.UpgradePlan) (drainControlPlane b
 	}
 
 	return drainControlPlane, drainWorker
+}
+
+func upgradePendingMessage(component string) string {
+	return fmt.Sprintf("%s upgrade is not yet started", component)
 }
 
 type setCondition func(plan *lifecyclev1alpha1.UpgradePlan, conditionType string, message string)
