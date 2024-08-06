@@ -15,7 +15,7 @@ func (r *UpgradePlanReconciler) reconcileCDI(ctx context.Context, upgradePlan *l
 	}
 
 	setCondition, requeue := evaluateHelmChartState(state)
-	setCondition(upgradePlan, lifecyclev1alpha1.CDIUpgradedCondition, state.Message())
+	setCondition(upgradePlan, lifecyclev1alpha1.CDIUpgradedCondition, state.FormattedMessage(cdi.ReleaseName))
 
 	return ctrl.Result{Requeue: requeue}, nil
 }

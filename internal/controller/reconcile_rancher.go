@@ -15,7 +15,7 @@ func (r *UpgradePlanReconciler) reconcileRancher(ctx context.Context, upgradePla
 	}
 
 	setCondition, requeue := evaluateHelmChartState(state)
-	setCondition(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition, state.Message())
+	setCondition(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition, state.FormattedMessage(rancher.ReleaseName))
 
 	return ctrl.Result{Requeue: requeue}, nil
 }

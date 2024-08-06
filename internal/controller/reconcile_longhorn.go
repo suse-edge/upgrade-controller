@@ -15,7 +15,7 @@ func (r *UpgradePlanReconciler) reconcileLonghorn(ctx context.Context, upgradePl
 	}
 
 	setCondition, requeue := evaluateHelmChartState(state)
-	setCondition(upgradePlan, lifecyclev1alpha1.LonghornUpgradedCondition, state.Message())
+	setCondition(upgradePlan, lifecyclev1alpha1.LonghornUpgradedCondition, state.FormattedMessage(longhorn.ReleaseName))
 
 	return ctrl.Result{Requeue: requeue}, nil
 }
