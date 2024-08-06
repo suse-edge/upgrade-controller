@@ -13,7 +13,7 @@ type Components struct {
 	Longhorn               HelmChart       `yaml:"longhorn"`
 	MetalLB                HelmChart       `yaml:"metallb"`
 	CDI                    HelmChart       `yaml:"cdi"`
-	KubeVirt               HelmChart       `yaml:"kubevirt"`
+	KubeVirt               KubeVirt        `yaml:"kubevirt"`
 	NeuVector              NeuVector       `yaml:"neuvector"`
 	EndpointCopierOperator HelmChart       `yaml:"endpointCopierOperator"`
 	Elemental              Elemental       `yaml:"elemental"`
@@ -58,4 +58,9 @@ type Elemental struct {
 type SRIOV struct {
 	CRD             HelmChart `yaml:"crd"`
 	NetworkOperator HelmChart `yaml:"networkOperator"`
+}
+
+type KubeVirt struct {
+	KubeVirt           HelmChart `yaml:"kubevirt"`
+	DashboardExtension HelmChart `yaml:"dashboardExtension"`
 }

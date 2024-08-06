@@ -25,9 +25,14 @@ components:
     chart: oci://registry.suse.com/edge/cdi-chart
     version: 0.2.3
   kubevirt:
-    releaseName: kubevirt
-    chart: oci://registry.suse.com/edge/kubevirt-chart
-    version: 0.2.4
+    kubevirt:
+      releaseName: kubevirt
+      chart: oci://registry.suse.com/edge/kubevirt-chart
+      version: 0.2.4
+    dashboardExtension:
+      releaseName: kubevirt-dashboard-extension
+      chart: oci://registry.suse.com/edge/kubevirt-dashboard-extension-chart
+      version: 1.0.0
   neuvector:
     crd:
       releaseName: neuvector-crd
