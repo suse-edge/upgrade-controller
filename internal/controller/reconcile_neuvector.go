@@ -17,7 +17,7 @@ func (r *UpgradePlanReconciler) reconcileNeuVector(ctx context.Context, upgradeP
 
 	conditionType := lifecyclev1alpha1.NeuVectorUpgradedCondition
 
-	if state != upgrade.ChartStateSucceeded {
+	if state != upgrade.ChartStateSucceeded && state != upgrade.ChartStateVersionAlreadyInstalled {
 		setCondition, requeue := evaluateHelmChartState(state)
 		setCondition(upgradePlan, conditionType, state.FormattedMessage(neuVector.CRD.ReleaseName))
 
