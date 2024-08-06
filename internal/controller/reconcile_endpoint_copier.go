@@ -15,7 +15,7 @@ func (r *UpgradePlanReconciler) reconcileEndpointCopier(ctx context.Context, upg
 	}
 
 	setCondition, requeue := evaluateHelmChartState(state)
-	setCondition(upgradePlan, lifecyclev1alpha1.EndpointCopierUpgradedCondition, state.Message())
+	setCondition(upgradePlan, lifecyclev1alpha1.EndpointCopierUpgradedCondition, state.FormattedMessage(endpointCopier.ReleaseName))
 
 	return ctrl.Result{Requeue: requeue}, nil
 }
