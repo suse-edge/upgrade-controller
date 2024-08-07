@@ -32,6 +32,7 @@ const (
 	NeuVectorUpgradedCondition      = "NeuVectorUpgraded"
 	EndpointCopierUpgradedCondition = "EndpointCopierOperatorUpgraded"
 	ElementalUpgradedCondition      = "ElementalUpgraded"
+	SRIOVUpgradedCondition          = "SRIOVNetworkOperatorUpgraded"
 
 	// UpgradeError indicates that the upgrade process has encountered a transient error.
 	UpgradeError = "Error"
