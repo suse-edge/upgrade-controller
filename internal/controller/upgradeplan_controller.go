@@ -100,6 +100,7 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.NeuVectorUpgradedCondition, upgradePendingMessage("NeuVector"))
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.EndpointCopierUpgradedCondition, upgradePendingMessage("EndpointCopierOperator"))
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.ElementalUpgradedCondition, upgradePendingMessage("Elemental"))
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.SRIOVUpgradedCondition, upgradePendingMessage("SR-IOV"))
 
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -125,6 +126,8 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 		return r.reconcileEndpointCopier(ctx, upgradePlan, &release.Components.EndpointCopierOperator)
 	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.ElementalUpgradedCondition):
 		return r.reconcileElemental(ctx, upgradePlan, &release.Components.Elemental)
+	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.SRIOVUpgradedCondition):
+		return r.reconcileSRIOV(ctx, upgradePlan, &release.Components.SRIOV)
 	}
 
 	logger := log.FromContext(ctx)
