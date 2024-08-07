@@ -52,6 +52,15 @@ components:
       releaseName: elemental-operator
       chart: oci://registry.suse.com/rancher/elemental-operator-chart
       version: 1.4.4
+  sriov:
+    crd:
+      releaseName: sriov-crd
+      chart: oci://registry.suse.com/edge/sriov-crd-chart
+      version: 1.2.2+up0.1.0
+    networkOperator:
+      releaseName: sriov-network-operator
+      chart: oci://registry.suse.com/edge/sriov-network-operator-chart
+      version: 1.2.2+up0.1.0
   operatingSystem:
     version: 6.0
     zypperID: SL-Micro
