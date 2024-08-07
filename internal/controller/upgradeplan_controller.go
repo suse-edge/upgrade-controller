@@ -102,6 +102,7 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.ElementalUpgradedCondition, upgradePendingMessage("Elemental"))
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.SRIOVUpgradedCondition, upgradePendingMessage("SR-IOV"))
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.AkriUpgradedCondition, upgradePendingMessage("Akri"))
+		setPendingCondition(upgradePlan, lifecyclev1alpha1.Metal3UpgradedCondition, upgradePendingMessage("Metal3"))
 
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -131,6 +132,8 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 		return r.reconcileSRIOV(ctx, upgradePlan, &release.Components.SRIOV)
 	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.AkriUpgradedCondition):
 		return r.reconcileAkri(ctx, upgradePlan, &release.Components.Akri)
+	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.Metal3UpgradedCondition):
+		return r.reconcileMetal3(ctx, upgradePlan, &release.Components.Metal3)
 	}
 
 	logger := log.FromContext(ctx)
