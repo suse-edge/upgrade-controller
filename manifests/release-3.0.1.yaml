@@ -56,11 +56,11 @@ components:
     crd:
       releaseName: sriov-crd
       chart: oci://registry.suse.com/edge/sriov-crd-chart
-      version: 1.2.2+up0.1.0
+      version: 1.2.2
     networkOperator:
       releaseName: sriov-network-operator
       chart: oci://registry.suse.com/edge/sriov-network-operator-chart
-      version: 1.2.2+up0.1.0
+      version: 1.2.2
   operatingSystem:
     version: 6.0
     zypperID: SL-Micro
