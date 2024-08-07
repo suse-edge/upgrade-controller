@@ -66,6 +66,10 @@ components:
       releaseName: sriov-network-operator
       chart: oci://registry.suse.com/edge/sriov-network-operator-chart
       version: 1.2.2
+  akri:
+    releaseName: akri
+    chart: oci://registry.suse.com/edge/akri-chart
+    version: 0.12.20
   operatingSystem:
     version: 6.0
     zypperID: SL-Micro
