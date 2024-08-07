@@ -37,5 +37,5 @@ func (r *UpgradePlanReconciler) reconcileSRIOV(ctx context.Context, upgradePlan 
 	setCondition, requeue := evaluateHelmChartState(state)
 	setCondition(upgradePlan, conditionType, state.FormattedMessage(sriov.NetworkOperator.ReleaseName))
 
-	return ctrl.Result{Requeue: requeue}, err
+	return ctrl.Result{Requeue: requeue}, nil
 }
