@@ -70,6 +70,10 @@ components:
     releaseName: akri
     chart: oci://registry.suse.com/edge/akri-chart
     version: 0.12.20
+  metal3:
+    releaseName: metal3
+    chart: oci://registry.suse.com/edge/metal3-chart
+    version: 0.7.1
   operatingSystem:
     version: 6.0
     zypperID: SL-Micro

@@ -19,6 +19,7 @@ type Components struct {
 	Elemental              Elemental       `yaml:"elemental"`
 	SRIOV                  SRIOV           `yaml:"sriov"`
 	Akri                   HelmChart       `yaml:"akri"`
+	Metal3                 HelmChart       `yaml:"metal3"`
 }
 
 type Kubernetes struct {
