@@ -141,7 +141,7 @@ func (r *UpgradePlanReconciler) createSecret(ctx context.Context, upgradePlan *l
 		return fmt.Errorf("creating secret: %w", err)
 	}
 
-	r.recordCreatedObject(upgradePlan, "SecretCreated", fmt.Sprintf("Secret created: %s/%s", secret.Namespace, secret.Name))
+	r.recordPlanEvent(upgradePlan, corev1.EventTypeNormal, "SecretCreated", fmt.Sprintf("Secret created: %s/%s", secret.Namespace, secret.Name))
 	return nil
 }
 
@@ -150,7 +150,7 @@ func (r *UpgradePlanReconciler) createPlan(ctx context.Context, upgradePlan *lif
 		return fmt.Errorf("creating upgrade plan: %w", err)
 	}
 
-	r.recordCreatedObject(upgradePlan, "PlanCreated", fmt.Sprintf("Upgrade plan created: %s/%s", plan.Namespace, plan.Name))
+	r.recordPlanEvent(upgradePlan, corev1.EventTypeNormal, "PlanCreated", fmt.Sprintf("Upgrade plan created: %s/%s", plan.Namespace, plan.Name))
 	return nil
 }
 
@@ -166,8 +166,8 @@ func (r *UpgradePlanReconciler) createObject(ctx context.Context, upgradePlan *l
 	return nil
 }
 
-func (r *UpgradePlanReconciler) recordCreatedObject(upgradePlan *lifecyclev1alpha1.UpgradePlan, reason, msg string) {
-	r.Recorder.Eventf(upgradePlan, corev1.EventTypeNormal, reason, msg)
+func (r *UpgradePlanReconciler) recordPlanEvent(upgradePlan *lifecyclev1alpha1.UpgradePlan, eventType, reason, msg string) {
+	r.Recorder.Eventf(upgradePlan, eventType, reason, msg)
 }
 
 func isHelmUpgradeFinished(plan *lifecyclev1alpha1.UpgradePlan, conditionType string) bool {
