@@ -2,35 +2,48 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 	"github.com/suse-edge/upgrade-controller/internal/upgrade"
 	"github.com/suse-edge/upgrade-controller/pkg/release"
 
+	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func (r *UpgradePlanReconciler) reconcileKubevirt(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, kubevirt *release.KubeVirt) (ctrl.Result, error) {
-	state, err := r.upgradeHelmChart(ctx, upgradePlan, &kubevirt.KubeVirt)
+	kubevirtState, err := r.upgradeHelmChart(ctx, upgradePlan, &kubevirt.KubeVirt)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
 	conditionType := lifecyclev1alpha1.KubevirtUpgradedCondition
-	if state != upgrade.ChartStateSucceeded && state != upgrade.ChartStateVersionAlreadyInstalled {
-		setCondition, requeue := evaluateHelmChartState(state)
-		setCondition(upgradePlan, conditionType, state.FormattedMessage(kubevirt.KubeVirt.ReleaseName))
+	if kubevirtState != upgrade.ChartStateSucceeded && kubevirtState != upgrade.ChartStateVersionAlreadyInstalled {
+		setCondition, requeue := evaluateHelmChartState(kubevirtState)
+		setCondition(upgradePlan, conditionType, kubevirtState.FormattedMessage(kubevirt.KubeVirt.ReleaseName))
 
 		return ctrl.Result{Requeue: requeue}, err
 	}
 
-	state, err = r.upgradeHelmChart(ctx, upgradePlan, &kubevirt.DashboardExtension)
+	dashboardState, err := r.upgradeHelmChart(ctx, upgradePlan, &kubevirt.DashboardExtension)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	setCondition, requeue := evaluateHelmChartState(state)
-	setCondition(upgradePlan, conditionType, state.FormattedMessage(kubevirt.DashboardExtension.ReleaseName))
+	switch dashboardState {
+	case upgrade.ChartStateFailed:
+		msg := fmt.Sprintf("Main component '%s' upgraded successfully, but add-on component '%s' failed to upgrade", kubevirt.KubeVirt.ReleaseName, kubevirt.DashboardExtension.ReleaseName)
+		r.recordPlanEvent(upgradePlan, corev1.EventTypeWarning, conditionType, msg)
 
-	return ctrl.Result{Requeue: requeue}, err
+		fallthrough
+	case upgrade.ChartStateNotInstalled, upgrade.ChartStateVersionAlreadyInstalled:
+		setCondition, requeue := evaluateHelmChartState(kubevirtState)
+		setCondition(upgradePlan, conditionType, kubevirtState.FormattedMessage(kubevirt.KubeVirt.ReleaseName))
+		return ctrl.Result{Requeue: requeue}, nil
+	default:
+		setCondition, requeue := evaluateHelmChartState(dashboardState)
+		setCondition(upgradePlan, conditionType, dashboardState.FormattedMessage(kubevirt.DashboardExtension.ReleaseName))
+		return ctrl.Result{Requeue: requeue}, nil
+	}
 }
