@@ -16,6 +16,7 @@ type Components struct {
 	KubeVirt               HelmChart       `yaml:"kubevirt"`
 	NeuVector              NeuVector       `yaml:"neuvector"`
 	EndpointCopierOperator HelmChart       `yaml:"endpointCopierOperator"`
+	Elemental              Elemental       `yaml:"elemental"`
 }
 
 type Kubernetes struct {
@@ -39,11 +40,16 @@ type OperatingSystem struct {
 type HelmChart struct {
 	ReleaseName string `yaml:"releaseName"`
 	Name        string `yaml:"chart"`
-	Repository  string `yaml:"repository"`
+	Repository  string `yaml:"repository,omitempty"`
 	Version     string `yaml:"version"`
 }
 
 type NeuVector struct {
 	CRD       HelmChart `yaml:"crd"`
 	NeuVector HelmChart `yaml:"neuvector"`
+}
+
+type Elemental struct {
+	CRD      HelmChart `yaml:"crd"`
+	Operator HelmChart `yaml:"operator"`
 }

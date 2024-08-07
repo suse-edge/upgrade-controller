@@ -31,6 +31,7 @@ const (
 	KubevirtUpgradedCondition       = "KubeVirtUpgraded"
 	NeuVectorUpgradedCondition      = "NeuVectorUpgraded"
 	EndpointCopierUpgradedCondition = "EndpointCopierOperatorUpgraded"
+	ElementalUpgradedCondition      = "ElementalUpgraded"
 
 	// UpgradeError indicates that the upgrade process has encountered a transient error.
 	UpgradeError = "Error"
