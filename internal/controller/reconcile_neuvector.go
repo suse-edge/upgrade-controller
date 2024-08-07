@@ -37,5 +37,5 @@ func (r *UpgradePlanReconciler) reconcileNeuVector(ctx context.Context, upgradeP
 	setCondition, requeue := evaluateHelmChartState(state)
 	setCondition(upgradePlan, conditionType, state.FormattedMessage(neuVector.NeuVector.ReleaseName))
 
-	return ctrl.Result{Requeue: requeue}, err
+	return ctrl.Result{Requeue: requeue}, nil
 }
