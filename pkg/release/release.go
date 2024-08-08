@@ -18,7 +18,7 @@ type Components struct {
 	EndpointCopierOperator HelmChart       `yaml:"endpointCopierOperator"`
 	Elemental              Elemental       `yaml:"elemental"`
 	SRIOV                  SRIOV           `yaml:"sriov"`
-	Akri                   HelmChart       `yaml:"akri"`
+	Akri                   Akri            `yaml:"akri"`
 	Metal3                 HelmChart       `yaml:"metal3"`
 }
 
@@ -64,5 +64,10 @@ type SRIOV struct {
 
 type KubeVirt struct {
 	KubeVirt           HelmChart `yaml:"kubevirt"`
+	DashboardExtension HelmChart `yaml:"dashboardExtension"`
+}
+
+type Akri struct {
+	Akri               HelmChart `yaml:"akri"`
 	DashboardExtension HelmChart `yaml:"dashboardExtension"`
 }
