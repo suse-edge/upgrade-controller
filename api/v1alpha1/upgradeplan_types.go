@@ -34,6 +34,7 @@ const (
 	ElementalUpgradedCondition      = "ElementalUpgraded"
 	SRIOVUpgradedCondition          = "SRIOVNetworkOperatorUpgraded"
 	AkriUpgradedCondition           = "AkriUpgraded"
+	Metal3UpgradedCondition         = "Metal3Upgraded"
 
 	// UpgradeError indicates that the upgrade process has encountered a transient error.
 	UpgradeError = "Error"
