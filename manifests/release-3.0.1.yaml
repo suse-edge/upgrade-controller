@@ -67,9 +67,14 @@ components:
       chart: oci://registry.suse.com/edge/sriov-network-operator-chart
       version: 1.2.2
   akri:
-    releaseName: akri
-    chart: oci://registry.suse.com/edge/akri-chart
-    version: 0.12.20
+    akri:
+      releaseName: akri
+      chart: oci://registry.suse.com/edge/akri-chart
+      version: 0.12.20
+    dashboardExtension:
+      releaseName: akri-dashboard-extension
+      chart: oci://registry.suse.com/edge/akri-dashboard-extension-chart
+      version: 1.0.0
   metal3:
     releaseName: metal3
     chart: oci://registry.suse.com/edge/metal3-chart
