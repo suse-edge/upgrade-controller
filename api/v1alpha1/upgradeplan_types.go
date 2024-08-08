@@ -33,6 +33,7 @@ const (
 	EndpointCopierUpgradedCondition = "EndpointCopierOperatorUpgraded"
 	ElementalUpgradedCondition      = "ElementalUpgraded"
 	SRIOVUpgradedCondition          = "SRIOVNetworkOperatorUpgraded"
+	AkriUpgradedCondition           = "AkriUpgraded"
 
 	// UpgradeError indicates that the upgrade process has encountered a transient error.
 	UpgradeError = "Error"

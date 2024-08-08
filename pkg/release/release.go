@@ -18,6 +18,7 @@ type Components struct {
 	EndpointCopierOperator HelmChart       `yaml:"endpointCopierOperator"`
 	Elemental              Elemental       `yaml:"elemental"`
 	SRIOV                  SRIOV           `yaml:"sriov"`
+	Akri                   HelmChart       `yaml:"akri"`
 }
 
 type Kubernetes struct {
