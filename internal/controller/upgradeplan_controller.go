@@ -30,6 +30,7 @@ import (
 	"github.com/suse-edge/upgrade-controller/pkg/release"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -64,6 +65,7 @@ type UpgradePlanReconciler struct {
 // +kubebuilder:rbac:groups=batch,resources=jobs/status,verbs=get
 // +kubebuilder:rbac:groups=helm.cattle.io,resources=helmcharts,verbs=get;update;list;watch;create
 // +kubebuilder:rbac:groups=helm.cattle.io,resources=helmcharts/status,verbs=get
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -275,6 +277,18 @@ func (r *UpgradePlanReconciler) findUpgradePlanFromJob(ctx context.Context, job 
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	definitionsGetter := clientset.NewForConfigOrDie(mgr.GetConfig()).ApiextensionsV1().CustomResourceDefinitions()
+
+	helmChartKind := helmcattlev1.Kind(helmcattlev1.HelmChartResourceName)
+	if _, err := definitionsGetter.Get(context.Background(), helmChartKind.String(), metav1.GetOptions{}); err != nil {
+		return fmt.Errorf("verifying Helm Controller installation: %w", err)
+	}
+
+	upgradePlanKind := upgradecattlev1.Kind(upgradecattlev1.PlanResourceName)
+	if _, err := definitionsGetter.Get(context.Background(), upgradePlanKind.String(), metav1.GetOptions{}); err != nil {
+		return fmt.Errorf("verifying System Upgrade Controller installation: %w", err)
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&lifecyclev1alpha1.UpgradePlan{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&upgradecattlev1.Plan{}, builder.WithPredicates(predicate.Funcs{
