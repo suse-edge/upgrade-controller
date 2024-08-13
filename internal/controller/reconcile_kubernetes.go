@@ -7,7 +7,6 @@ import (
 
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 	"github.com/suse-edge/upgrade-controller/internal/upgrade"
-	"github.com/suse-edge/upgrade-controller/pkg/release"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, kubernetes *release.Kubernetes) (ctrl.Result, error) {
+func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, kubernetes *lifecyclev1alpha1.Kubernetes) (ctrl.Result, error) {
 	nodeList := &corev1.NodeList{}
 	if err := r.List(ctx, nodeList); err != nil {
 		return ctrl.Result{}, fmt.Errorf("listing nodes: %w", err)
@@ -75,7 +74,7 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgrade
 	return ctrl.Result{Requeue: true}, nil
 }
 
-func targetKubernetesVersion(nodeList *corev1.NodeList, kubernetes *release.Kubernetes) (string, error) {
+func targetKubernetesVersion(nodeList *corev1.NodeList, kubernetes *lifecyclev1alpha1.Kubernetes) (string, error) {
 	if len(nodeList.Items) == 0 {
 		return "", fmt.Errorf("unable to determine current kubernetes version due to empty node list")
 	}

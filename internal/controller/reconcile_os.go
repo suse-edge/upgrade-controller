@@ -6,7 +6,6 @@ import (
 
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 	"github.com/suse-edge/upgrade-controller/internal/upgrade"
-	"github.com/suse-edge/upgrade-controller/pkg/release"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,8 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, release *release.Release) (ctrl.Result, error) {
-	secret, err := upgrade.OSUpgradeSecret(&release.Components.OperatingSystem)
+func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, releaseVersion string, releaseOS *lifecyclev1alpha1.OperatingSystem) (ctrl.Result, error) {
+	secret, err := upgrade.OSUpgradeSecret(releaseOS)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("generating OS upgrade secret: %w", err)
 	}
@@ -30,7 +29,7 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 	}
 
 	drainControlPlane, drainWorker := parseDrainOptions(upgradePlan)
-	controlPlanePlan := upgrade.OSControlPlanePlan(release.ReleaseVersion, secret.Name, &release.Components.OperatingSystem, drainControlPlane)
+	controlPlanePlan := upgrade.OSControlPlanePlan(releaseVersion, secret.Name, releaseOS, drainControlPlane)
 	if err = r.Get(ctx, client.ObjectKeyFromObject(controlPlanePlan), controlPlanePlan); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
@@ -50,7 +49,7 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 		return ctrl.Result{}, fmt.Errorf("listing nodes: %w", err)
 	}
 
-	if !isOSUpgraded(nodeList, selector, release.Components.OperatingSystem.PrettyName) {
+	if !isOSUpgraded(nodeList, selector, releaseOS.PrettyName) {
 		setInProgressCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "Control plane nodes are being upgraded")
 		return ctrl.Result{}, nil
 	} else if controlPlaneOnlyCluster(nodeList) {
@@ -58,7 +57,7 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	workerPlan := upgrade.OSWorkerPlan(release.ReleaseVersion, secret.Name, &release.Components.OperatingSystem, drainWorker)
+	workerPlan := upgrade.OSWorkerPlan(releaseVersion, secret.Name, releaseOS, drainWorker)
 	if err = r.Get(ctx, client.ObjectKeyFromObject(workerPlan), workerPlan); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
@@ -73,7 +72,7 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 		return ctrl.Result{}, fmt.Errorf("parsing node selector: %w", err)
 	}
 
-	if !isOSUpgraded(nodeList, selector, release.Components.OperatingSystem.PrettyName) {
+	if !isOSUpgraded(nodeList, selector, releaseOS.PrettyName) {
 		setInProgressCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "Worker nodes are being upgraded")
 		return ctrl.Result{}, nil
 	}

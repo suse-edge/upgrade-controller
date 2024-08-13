@@ -9,7 +9,8 @@ import (
 	"text/template"
 
 	upgradecattlev1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
-	"github.com/suse-edge/upgrade-controller/pkg/release"
+	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -21,7 +22,7 @@ const (
 //go:embed templates/os-upgrade.sh.tpl
 var osUpgradeScript string
 
-func OSUpgradeSecret(releaseOS *release.OperatingSystem) (*corev1.Secret, error) {
+func OSUpgradeSecret(releaseOS *lifecyclev1alpha1.OperatingSystem) (*corev1.Secret, error) {
 	const (
 		secretName = "os-upgrade-secret"
 	)
@@ -64,7 +65,7 @@ func OSUpgradeSecret(releaseOS *release.OperatingSystem) (*corev1.Secret, error)
 	return secret, nil
 }
 
-func OSControlPlanePlan(releaseVersion, secretName string, releaseOS *release.OperatingSystem, drain bool) *upgradecattlev1.Plan {
+func OSControlPlanePlan(releaseVersion, secretName string, releaseOS *lifecyclev1alpha1.OperatingSystem, drain bool) *upgradecattlev1.Plan {
 	controlPlanePlanName := osPlanName(controlPlaneKey, releaseOS.ZypperID, releaseOS.Version)
 	controlPlanePlan := baseOSPlan(controlPlanePlanName, releaseVersion, secretName, drain)
 
@@ -107,7 +108,7 @@ func OSControlPlanePlan(releaseVersion, secretName string, releaseOS *release.Op
 	return controlPlanePlan
 }
 
-func OSWorkerPlan(releaseVersion, secretName string, releaseOS *release.OperatingSystem, drain bool) *upgradecattlev1.Plan {
+func OSWorkerPlan(releaseVersion, secretName string, releaseOS *lifecyclev1alpha1.OperatingSystem, drain bool) *upgradecattlev1.Plan {
 	workerPlanName := osPlanName(workersKey, releaseOS.ZypperID, releaseOS.Version)
 	workerPlan := baseOSPlan(workerPlanName, releaseVersion, secretName, drain)
 
