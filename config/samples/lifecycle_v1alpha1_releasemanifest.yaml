@@ -1,0 +1,94 @@
+apiVersion: lifecycle.suse.com/v1alpha1
+kind: ReleaseManifest
+metadata:
+  labels:
+    app.kubernetes.io/name: upgrade-controller
+    app.kubernetes.io/managed-by: kustomize
+  name: releasemanifest-sample
+  namespace: cattle-system
+spec:
+  releaseVersion: 3.0.1
+  components:
+    kubernetes:
+      k3s:
+        version: v1.28.9+k3s1
+      rke2:
+        version: v1.28.9+rke2r1
+    operatingSystem:
+      version: "6.0"
+      zypperID: "SL-Micro"
+      cpeScheme: "cpe:/o:suse:sl-micro:6.0"
+      repoGPGPath: "/usr/lib/rpm/gnupg/keys/gpg-pubkey-09d9ea69-645b99ce.asc"
+      prettyName: "SUSE Linux Micro 6.0"
+      supportedArchs:
+        - "x86_64"
+    workloads:
+      helm:
+      - prettyName: Rancher
+        releaseName: rancher
+        chart: rancher
+        version: v2.8.5
+        repository: https://charts.rancher.com/server-charts/prime
+      - prettyName: Longhorn
+        releaseName: longhorn
+        chart: longhorn
+        version: v1.6.1
+        repository: https://charts.longhorn.io
+      - prettyName: MetalLB
+        releaseName: metallb
+        chart: oci://registry.suse.com/edge/metallb-chart
+        version: 0.14.3
+      - prettyName: CDI
+        releaseName: cdi
+        chart: oci://registry.suse.com/edge/cdi-chart
+        version: 0.2.3
+      - prettyName: KubeVirt
+        releaseName: kubevirt
+        chart: oci://registry.suse.com/edge/kubevirt-chart
+        version: 0.2.4
+        addonCharts:
+        - releaseName: kubevirt-dashboard-extension
+          chart: oci://registry.suse.com/edge/kubevirt-dashboard-extension-chart
+          version: 1.0.0
+      - prettyName: NeuVector
+        releaseName: neuvector
+        chart: neuvector
+        version: 103.0.4+up2.7.7
+        repository: https://charts.rancher.io
+        dependencyCharts:
+        - releaseName: neuvector-crd
+          chart: neuvector-crd
+          version: 103.0.4+up2.7.7
+          repository: https://charts.rancher.io
+      - prettyName: EndpointCopierOperator
+        releaseName: endpoint-copier-operator
+        chart: oci://registry.suse.com/edge/endpoint-copier-operator-chart
+        version: 0.2.0
+      - prettyName: Elemental
+        releaseName: elemental-operator
+        chart: oci://registry.suse.com/rancher/elemental-operator-chart
+        version: 1.4.4
+        dependencyCharts:
+        - releaseName: elemental-operator-crds
+          chart: oci://registry.suse.com/rancher/elemental-operator-crds-chart
+          version: 1.4.4
+      - prettyName: SRIOVNetworkOperator
+        releaseName: sriov-network-operator
+        chart: oci://registry.suse.com/edge/sriov-network-operator-chart
+        version: 1.2.2
+        dependencyCharts:
+        - releaseName: sriov-crd
+          chart: oci://registry.suse.com/edge/sriov-crd-chart
+          version: 1.2.2
+      - prettyName: Akri
+        releaseName: akri
+        chart: oci://registry.suse.com/edge/akri-chart
+        version: 0.12.20
+        addonCharts:
+        - releaseName: akri-dashboard-extension
+          chart: oci://registry.suse.com/edge/akri-dashboard-extension-chart
+          version: 1.0.0
+      - prettyName: Metal3
+        releaseName: metal3
+        chart: oci://registry.suse.com/edge/metal3-chart
+        version: 0.7.1
