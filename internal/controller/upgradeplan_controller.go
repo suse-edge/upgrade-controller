@@ -284,8 +284,8 @@ func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return fmt.Errorf("verifying Helm Controller installation: %w", err)
 	}
 
-	upgradePlanKind := upgradecattlev1.Kind(upgradecattlev1.PlanResourceName)
-	if _, err := definitionsGetter.Get(context.Background(), upgradePlanKind.String(), metav1.GetOptions{}); err != nil {
+	sucPlanKind := upgradecattlev1.Kind(upgradecattlev1.PlanResourceName)
+	if _, err := definitionsGetter.Get(context.Background(), sucPlanKind.String(), metav1.GetOptions{}); err != nil {
 		return fmt.Errorf("verifying System Upgrade Controller installation: %w", err)
 	}
 
