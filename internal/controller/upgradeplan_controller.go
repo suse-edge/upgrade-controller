@@ -83,7 +83,30 @@ func (r *UpgradePlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	return result, errors.Join(err, r.Status().Update(ctx, plan))
 }
 
+func (r *UpgradePlanReconciler) getReleaseManifest(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) (*lifecyclev1alpha1.ReleaseManifest, error) {
+	manifests := &lifecyclev1alpha1.ReleaseManifestList{}
+	listOpts := &client.ListOptions{
+		Namespace: upgradePlan.Namespace,
+	}
+	if err := r.List(ctx, manifests, listOpts); err != nil {
+		return nil, fmt.Errorf("listing release manifests in cluster: %w", err)
+	}
+
+	for _, manifest := range manifests.Items {
+		if manifest.Spec.ReleaseVersion == upgradePlan.Spec.ReleaseVersion {
+			return &manifest, nil
+		}
+	}
+
+	return nil, fmt.Errorf("release manifest with version %s not found", upgradePlan.Spec.ReleaseVersion)
+}
+
 func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) (ctrl.Result, error) {
+	release, err := r.getReleaseManifest(ctx, upgradePlan)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("retrieving release manifest: %w", err)
+	}
+
 	if len(upgradePlan.Status.Conditions) == 0 {
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, upgradePendingMessage("OS"))
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, upgradePendingMessage("Kubernetes"))
