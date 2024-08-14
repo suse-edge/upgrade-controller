@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -94,4 +96,8 @@ type UpgradePlanList struct {
 
 func init() {
 	SchemeBuilder.Register(&UpgradePlan{}, &UpgradePlanList{})
+}
+
+func GetChartConditionType(prettyName string) string {
+	return fmt.Sprintf("%sUpgraded", prettyName)
 }

@@ -11,7 +11,7 @@ import (
 )
 
 func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, chart *lifecyclev1alpha1.HelmChart) (ctrl.Result, error) {
-	conditionType := getChartConditionType(chart.PrettyName)
+	conditionType := lifecyclev1alpha1.GetChartConditionType(chart.PrettyName)
 
 	if len(chart.DependencyCharts) != 0 {
 		for _, depChart := range chart.DependencyCharts {
@@ -75,8 +75,4 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 	setCondition, requeue := evaluateHelmChartState(coreState)
 	setCondition(upgradePlan, conditionType, coreState.FormattedMessage(chart.ReleaseName))
 	return ctrl.Result{Requeue: requeue}, nil
-}
-
-func getChartConditionType(prettyName string) string {
-	return fmt.Sprintf("%sUpgraded", prettyName)
 }

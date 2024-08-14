@@ -112,7 +112,7 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, upgradePendingMessage("Kubernetes"))
 
 		for _, chart := range release.Spec.Components.Workloads.Helm {
-			setPendingCondition(upgradePlan, getChartConditionType(chart.PrettyName), upgradePendingMessage(chart.PrettyName))
+			setPendingCondition(upgradePlan, lifecyclev1alpha1.GetChartConditionType(chart.PrettyName), upgradePendingMessage(chart.PrettyName))
 		}
 
 		return ctrl.Result{Requeue: true}, nil
@@ -126,7 +126,7 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 	}
 
 	for _, chart := range release.Spec.Components.Workloads.Helm {
-		if !isHelmUpgradeFinished(upgradePlan, getChartConditionType(chart.PrettyName)) {
+		if !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.GetChartConditionType(chart.PrettyName)) {
 			return r.reconcileHelmChart(ctx, upgradePlan, &chart)
 		}
 	}
