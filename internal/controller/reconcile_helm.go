@@ -57,7 +57,7 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 			case upgrade.ChartStateFailed, upgrade.ChartStateUnknown:
 				msg := fmt.Sprintf("'%s' upgraded successfully, but add-on component '%s' failed to upgrade", chart.ReleaseName, addonChart.ReleaseName)
 				r.recordPlanEvent(upgradePlan, corev1.EventTypeWarning, conditionType, msg)
-			case upgrade.ChartStateNotInstalled, upgrade.ChartStateVersionAlreadyInstalled:
+			case upgrade.ChartStateNotInstalled:
 				msg := fmt.Sprintf("'%s' add-on component upgrade skipped as it is missing in the cluster", addonChart.ReleaseName)
 				r.recordPlanEvent(upgradePlan, corev1.EventTypeNormal, conditionType, msg)
 			case upgrade.ChartStateSucceeded:
