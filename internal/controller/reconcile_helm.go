@@ -24,7 +24,7 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 				setCondition, requeue := evaluateHelmChartState(depState)
 				setCondition(upgradePlan, conditionType, depState.FormattedMessage(depChart.ReleaseName))
 
-				return ctrl.Result{Requeue: requeue}, err
+				return ctrl.Result{Requeue: requeue}, nil
 			}
 		}
 	}
@@ -43,7 +43,7 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 		setCondition, requeue := evaluateHelmChartState(coreState)
 		setCondition(upgradePlan, conditionType, coreState.FormattedMessage(chart.ReleaseName))
 
-		return ctrl.Result{Requeue: requeue}, err
+		return ctrl.Result{Requeue: requeue}, nil
 	}
 
 	if len(chart.AddonCharts) != 0 {
