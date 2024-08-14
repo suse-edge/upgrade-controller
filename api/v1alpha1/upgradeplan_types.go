@@ -17,24 +17,14 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
 	OperatingSystemUpgradedCondition = "OSUpgraded"
-
-	KubernetesUpgradedCondition     = "KubernetesUpgraded"
-	RancherUpgradedCondition        = "RancherUpgraded"
-	LonghornUpgradedCondition       = "LonghornUpgraded"
-	MetalLBUpgradedCondition        = "MetalLBUpgraded"
-	CDIUpgradedCondition            = "CDIUpgraded"
-	KubevirtUpgradedCondition       = "KubeVirtUpgraded"
-	NeuVectorUpgradedCondition      = "NeuVectorUpgraded"
-	EndpointCopierUpgradedCondition = "EndpointCopierOperatorUpgraded"
-	ElementalUpgradedCondition      = "ElementalUpgraded"
-	SRIOVUpgradedCondition          = "SRIOVNetworkOperatorUpgraded"
-	AkriUpgradedCondition           = "AkriUpgraded"
-	Metal3UpgradedCondition         = "Metal3Upgraded"
+	KubernetesUpgradedCondition      = "KubernetesUpgraded"
 
 	// UpgradeError indicates that the upgrade process has encountered a transient error.
 	UpgradeError = "Error"
@@ -106,4 +96,8 @@ type UpgradePlanList struct {
 
 func init() {
 	SchemeBuilder.Register(&UpgradePlan{}, &UpgradePlanList{})
+}
+
+func GetChartConditionType(prettyName string) string {
+	return fmt.Sprintf("%sUpgraded", prettyName)
 }

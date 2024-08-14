@@ -27,7 +27,6 @@ import (
 	upgradecattlev1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 	"github.com/suse-edge/upgrade-controller/internal/upgrade"
-	"github.com/suse-edge/upgrade-controller/pkg/release"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -50,8 +49,6 @@ type UpgradePlanReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
-
-	Releases map[string]*release.Release
 }
 
 // +kubebuilder:rbac:groups=lifecycle.suse.com,resources=upgradeplans,verbs=get;list;watch;create;update;patch;delete
@@ -66,6 +63,7 @@ type UpgradePlanReconciler struct {
 // +kubebuilder:rbac:groups=helm.cattle.io,resources=helmcharts,verbs=get;update;list;watch;create
 // +kubebuilder:rbac:groups=helm.cattle.io,resources=helmcharts/status,verbs=get
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get
+// +kubebuilder:rbac:groups=lifecycle.suse.com,resources=releasemanifests,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -85,57 +83,52 @@ func (r *UpgradePlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	return result, errors.Join(err, r.Status().Update(ctx, plan))
 }
 
+func (r *UpgradePlanReconciler) getReleaseManifest(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) (*lifecyclev1alpha1.ReleaseManifest, error) {
+	manifests := &lifecyclev1alpha1.ReleaseManifestList{}
+	listOpts := &client.ListOptions{
+		Namespace: upgradePlan.Namespace,
+	}
+	if err := r.List(ctx, manifests, listOpts); err != nil {
+		return nil, fmt.Errorf("listing release manifests in cluster: %w", err)
+	}
+
+	for _, manifest := range manifests.Items {
+		if manifest.Spec.ReleaseVersion == upgradePlan.Spec.ReleaseVersion {
+			return &manifest, nil
+		}
+	}
+
+	return nil, fmt.Errorf("release manifest with version %s not found", upgradePlan.Spec.ReleaseVersion)
+}
+
 func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) (ctrl.Result, error) {
-	release, ok := r.Releases[upgradePlan.Spec.ReleaseVersion]
-	if !ok {
-		return ctrl.Result{}, fmt.Errorf("release manifest with version %v not found", upgradePlan.Spec.ReleaseVersion)
+	release, err := r.getReleaseManifest(ctx, upgradePlan)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("retrieving release manifest: %w", err)
 	}
 
 	if len(upgradePlan.Status.Conditions) == 0 {
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, upgradePendingMessage("OS"))
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, upgradePendingMessage("Kubernetes"))
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition, upgradePendingMessage("Rancher"))
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.LonghornUpgradedCondition, upgradePendingMessage("Longhorn"))
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.MetalLBUpgradedCondition, upgradePendingMessage("MetalLB"))
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.CDIUpgradedCondition, upgradePendingMessage("CDI"))
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubevirtUpgradedCondition, upgradePendingMessage("KubeVirt"))
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.NeuVectorUpgradedCondition, upgradePendingMessage("NeuVector"))
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.EndpointCopierUpgradedCondition, upgradePendingMessage("EndpointCopierOperator"))
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.ElementalUpgradedCondition, upgradePendingMessage("Elemental"))
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.SRIOVUpgradedCondition, upgradePendingMessage("SR-IOV"))
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.AkriUpgradedCondition, upgradePendingMessage("Akri"))
-		setPendingCondition(upgradePlan, lifecyclev1alpha1.Metal3UpgradedCondition, upgradePendingMessage("Metal3"))
+
+		for _, chart := range release.Spec.Components.Workloads.Helm {
+			setPendingCondition(upgradePlan, lifecyclev1alpha1.GetChartConditionType(chart.PrettyName), upgradePendingMessage(chart.PrettyName))
+		}
 
 		return ctrl.Result{Requeue: true}, nil
 	}
 
 	switch {
 	case !meta.IsStatusConditionTrue(upgradePlan.Status.Conditions, lifecyclev1alpha1.OperatingSystemUpgradedCondition):
-		return r.reconcileOS(ctx, upgradePlan, release)
+		return r.reconcileOS(ctx, upgradePlan, release.Spec.ReleaseVersion, &release.Spec.Components.OperatingSystem)
 	case !meta.IsStatusConditionTrue(upgradePlan.Status.Conditions, lifecyclev1alpha1.KubernetesUpgradedCondition):
-		return r.reconcileKubernetes(ctx, upgradePlan, &release.Components.Kubernetes)
-	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.RancherUpgradedCondition):
-		return r.reconcileRancher(ctx, upgradePlan, &release.Components.Rancher)
-	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.LonghornUpgradedCondition):
-		return r.reconcileLonghorn(ctx, upgradePlan, &release.Components.Longhorn)
-	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.MetalLBUpgradedCondition):
-		return r.reconcileMetalLB(ctx, upgradePlan, &release.Components.MetalLB)
-	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.CDIUpgradedCondition):
-		return r.reconcileCDI(ctx, upgradePlan, &release.Components.CDI)
-	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.KubevirtUpgradedCondition):
-		return r.reconcileKubevirt(ctx, upgradePlan, &release.Components.KubeVirt)
-	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.NeuVectorUpgradedCondition):
-		return r.reconcileNeuVector(ctx, upgradePlan, &release.Components.NeuVector)
-	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.EndpointCopierUpgradedCondition):
-		return r.reconcileEndpointCopier(ctx, upgradePlan, &release.Components.EndpointCopierOperator)
-	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.ElementalUpgradedCondition):
-		return r.reconcileElemental(ctx, upgradePlan, &release.Components.Elemental)
-	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.SRIOVUpgradedCondition):
-		return r.reconcileSRIOV(ctx, upgradePlan, &release.Components.SRIOV)
-	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.AkriUpgradedCondition):
-		return r.reconcileAkri(ctx, upgradePlan, &release.Components.Akri)
-	case !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.Metal3UpgradedCondition):
-		return r.reconcileMetal3(ctx, upgradePlan, &release.Components.Metal3)
+		return r.reconcileKubernetes(ctx, upgradePlan, &release.Spec.Components.Kubernetes)
+	}
+
+	for _, chart := range release.Spec.Components.Workloads.Helm {
+		if !isHelmUpgradeFinished(upgradePlan, lifecyclev1alpha1.GetChartConditionType(chart.PrettyName)) {
+			return r.reconcileHelmChart(ctx, upgradePlan, &chart)
+		}
 	}
 
 	logger := log.FromContext(ctx)

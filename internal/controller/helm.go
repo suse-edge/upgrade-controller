@@ -9,7 +9,6 @@ import (
 
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 	"github.com/suse-edge/upgrade-controller/internal/upgrade"
-	"github.com/suse-edge/upgrade-controller/pkg/release"
 
 	helmcattlev1 "github.com/k3s-io/helm-controller/pkg/apis/helm.cattle.io/v1"
 	helmrelease "helm.sh/helm/v3/pkg/release"
@@ -67,7 +66,7 @@ func retrieveHelmRelease(name string) (*helmrelease.Release, error) {
 }
 
 // Updates an existing HelmChart resource in order to trigger an upgrade.
-func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, chart *helmcattlev1.HelmChart, releaseChart *release.HelmChart) error {
+func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, chart *helmcattlev1.HelmChart, releaseChart *lifecyclev1alpha1.HelmChart) error {
 	backoffLimit := int32(6)
 
 	if chart.Annotations == nil {
@@ -86,7 +85,7 @@ func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan
 
 // Creates a HelmChart resource in order to trigger an upgrade
 // using the information from an existing Helm release.
-func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, installedChart *helmrelease.Release, releaseChart *release.HelmChart) error {
+func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, installedChart *helmrelease.Release, releaseChart *lifecyclev1alpha1.HelmChart) error {
 	backoffLimit := int32(6)
 	var values []byte
 
@@ -125,7 +124,7 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan
 	return r.Create(ctx, chart)
 }
 
-func (r *UpgradePlanReconciler) upgradeHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, releaseChart *release.HelmChart) (upgrade.HelmChartState, error) {
+func (r *UpgradePlanReconciler) upgradeHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, releaseChart *lifecyclev1alpha1.HelmChart) (upgrade.HelmChartState, error) {
 	helmRelease, err := retrieveHelmRelease(releaseChart.ReleaseName)
 	if err != nil {
 		if errors.Is(err, helmdriver.ErrReleaseNotFound) {
@@ -199,8 +198,4 @@ func evaluateHelmChartState(state upgrade.HelmChartState) (setCondition setCondi
 	default:
 		return setErrorCondition, false
 	}
-}
-
-func dependentHelmChartMissingMessage(dependency, dependent string) string {
-	return fmt.Sprintf("Chart %s is installed but chart %s is not", dependency, dependent)
 }
