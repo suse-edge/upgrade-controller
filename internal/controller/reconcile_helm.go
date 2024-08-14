@@ -54,7 +54,7 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 			}
 
 			switch addonState {
-			case upgrade.ChartStateFailed, upgrade.ChartStateUnknown:
+			case upgrade.ChartStateFailed:
 				msg := fmt.Sprintf("'%s' upgraded successfully, but add-on component '%s' failed to upgrade", chart.ReleaseName, addonChart.ReleaseName)
 				r.recordPlanEvent(upgradePlan, corev1.EventTypeWarning, conditionType, msg)
 			case upgrade.ChartStateNotInstalled:
@@ -67,6 +67,8 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 				// mark that current add-on chart upgrade is in progress
 				setInProgressCondition(upgradePlan, conditionType, addonState.FormattedMessage(addonChart.ReleaseName))
 				return ctrl.Result{Requeue: true}, nil
+			case upgrade.ChartStateUnknown:
+				return ctrl.Result{}, nil
 			}
 		}
 	}
