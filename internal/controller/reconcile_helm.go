@@ -65,9 +65,8 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 				r.recordPlanEvent(upgradePlan, corev1.EventTypeNormal, conditionType, msg)
 			case upgrade.ChartStateInProgress:
 				// mark that current add-on chart upgrade is in progress
-				setCondition, requeue := evaluateHelmChartState(addonState)
-				setCondition(upgradePlan, conditionType, addonState.FormattedMessage(addonChart.ReleaseName))
-				return ctrl.Result{Requeue: requeue}, nil
+				setInProgressCondition(upgradePlan, conditionType, addonState.FormattedMessage(addonChart.ReleaseName))
+				return ctrl.Result{Requeue: true}, nil
 			}
 		}
 	}
