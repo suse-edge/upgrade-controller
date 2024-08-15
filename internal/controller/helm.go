@@ -99,19 +99,18 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan
 		}
 	}
 
+	annotations := upgrade.PlanIdentifierAnnotations(upgradePlan.Name, upgradePlan.Namespace)
+	annotations[upgrade.ReleaseAnnotation] = upgradePlan.Spec.ReleaseVersion
+
 	chart := &helmcattlev1.HelmChart{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "HelmChart",
 			APIVersion: "helm.cattle.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      installedChart.Name,
-			Namespace: upgrade.HelmChartNamespace,
-			Annotations: map[string]string{
-				upgrade.PlanNameAnnotation:      upgradePlan.Name,
-				upgrade.PlanNamespaceAnnotation: upgradePlan.Namespace,
-				upgrade.ReleaseAnnotation:       upgradePlan.Spec.ReleaseVersion,
-			},
+			Name:        installedChart.Name,
+			Namespace:   upgrade.HelmChartNamespace,
+			Annotations: annotations,
 		},
 		Spec: helmcattlev1.HelmChartSpec{
 			Chart:           releaseChart.Name,

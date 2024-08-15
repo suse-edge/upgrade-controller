@@ -139,7 +139,7 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 }
 
 func (r *UpgradePlanReconciler) createSecret(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, secret *corev1.Secret) error {
-	if err := r.createObject(ctx, upgradePlan, secret); err != nil {
+	if err := r.Create(ctx, secret); err != nil {
 		return fmt.Errorf("creating secret: %w", err)
 	}
 
@@ -148,23 +148,11 @@ func (r *UpgradePlanReconciler) createSecret(ctx context.Context, upgradePlan *l
 }
 
 func (r *UpgradePlanReconciler) createPlan(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, plan *upgradecattlev1.Plan) error {
-	if err := r.createObject(ctx, upgradePlan, plan); err != nil {
+	if err := r.Create(ctx, plan); err != nil {
 		return fmt.Errorf("creating upgrade plan: %w", err)
 	}
 
 	r.recordPlanEvent(upgradePlan, corev1.EventTypeNormal, "PlanCreated", fmt.Sprintf("Upgrade plan created: %s/%s", plan.Namespace, plan.Name))
-	return nil
-}
-
-func (r *UpgradePlanReconciler) createObject(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, obj client.Object) error {
-	if err := ctrl.SetControllerReference(upgradePlan, obj, r.Scheme); err != nil {
-		return fmt.Errorf("setting controller reference: %w", err)
-	}
-
-	if err := r.Create(ctx, obj); err != nil {
-		return fmt.Errorf("creating object: %w", err)
-	}
-
 	return nil
 }
 
@@ -258,13 +246,19 @@ func (r *UpgradePlanReconciler) findUpgradePlanFromJob(ctx context.Context, job 
 		return []reconcile.Request{}
 	}
 
-	planName, ok := helmChart.Annotations[upgrade.PlanNameAnnotation]
+	return r.findUpgradePlanFromAnnotations(ctx, helmChart)
+}
+
+func (r *UpgradePlanReconciler) findUpgradePlanFromAnnotations(_ context.Context, object client.Object) []reconcile.Request {
+	annotations := object.GetAnnotations()
+
+	planName, ok := annotations[upgrade.PlanNameAnnotation]
 	if !ok || planName == "" {
-		// Helm chart is not managed by the Upgrade controller.
+		// Object is not managed by the Upgrade controller.
 		return []reconcile.Request{}
 	}
 
-	planNamespace := helmChart.Annotations[upgrade.PlanNamespaceAnnotation]
+	planNamespace := annotations[upgrade.PlanNamespaceAnnotation]
 
 	return []reconcile.Request{
 		{NamespacedName: types.NamespacedName{Namespace: planNamespace, Name: planName}},
@@ -287,7 +281,7 @@ func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&lifecyclev1alpha1.UpgradePlan{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Owns(&upgradecattlev1.Plan{}, builder.WithPredicates(predicate.Funcs{
+		Watches(&upgradecattlev1.Plan{}, handler.EnqueueRequestsFromMapFunc(r.findUpgradePlanFromAnnotations), builder.WithPredicates(predicate.Funcs{
 			CreateFunc: func(e event.CreateEvent) bool {
 				return false
 			},
@@ -322,6 +316,6 @@ func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return false
 			},
 		})).
-		Owns(&corev1.Secret{}).
+		Watches(&corev1.Secret{}, handler.EnqueueRequestsFromMapFunc(r.findUpgradePlanFromAnnotations)).
 		Complete(r)
 }

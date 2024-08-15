@@ -21,7 +21,14 @@ const (
 	workersKey      = "workers"
 )
 
-func baseUpgradePlan(name string, drain bool) *upgradecattlev1.Plan {
+func PlanIdentifierAnnotations(name, namespace string) map[string]string {
+	return map[string]string{
+		PlanNameAnnotation:      name,
+		PlanNamespaceAnnotation: namespace,
+	}
+}
+
+func baseUpgradePlan(name string, drain bool, annotations map[string]string) *upgradecattlev1.Plan {
 	const (
 		kind               = "Plan"
 		apiVersion         = "upgrade.cattle.io/v1"
@@ -34,8 +41,9 @@ func baseUpgradePlan(name string, drain bool) *upgradecattlev1.Plan {
 			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: SUCNamespace,
+			Name:        name,
+			Namespace:   SUCNamespace,
+			Annotations: annotations,
 		},
 		Spec: upgradecattlev1.PlanSpec{
 			ServiceAccountName: serviceAccountName,
