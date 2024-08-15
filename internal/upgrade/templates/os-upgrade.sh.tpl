@@ -62,20 +62,20 @@ executeUpgrade(){
 	trap "cleanupService ${UPDATE_SERVICE_PATH}" EXIT
 
 	echo "Creating ${SERVICE_NAME}..."
-	cat <<EOF > ${UPDATE_SERVICE_PATH}
-[Unit]
-Description=SUSE Edge Upgrade Service
-ConditionACPower=true
-Wants=network.target
-After=network.target
+	cat <<-EOF > ${UPDATE_SERVICE_PATH}
+		[Unit]
+		Description=SUSE Edge Upgrade Service
+		ConditionACPower=true
+		Wants=network.target
+		After=network.target
 
-[Service]
-Type=oneshot
-ExecStartPre=${EXEC_START_PRE}
-ExecStart=${EXEC_START}
-IOSchedulingClass=best-effort
-IOSchedulingPriority=7
-EOF
+		[Service]
+		Type=oneshot
+		ExecStartPre=${EXEC_START_PRE}
+		ExecStart=${EXEC_START}
+		IOSchedulingClass=best-effort
+		IOSchedulingPriority=7
+	EOF
 
 	echo "Starting ${SERVICE_NAME}..."
 	systemctl start ${SERVICE_NAME} &
