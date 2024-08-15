@@ -122,7 +122,7 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan
 		},
 	}
 
-	return r.Create(ctx, chart)
+	return r.createObject(ctx, upgradePlan, chart)
 }
 
 func (r *UpgradePlanReconciler) upgradeHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, releaseChart *lifecyclev1alpha1.HelmChart) (upgrade.HelmChartState, error) {

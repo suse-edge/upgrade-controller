@@ -27,7 +27,7 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 			return ctrl.Result{}, err
 		}
 
-		return ctrl.Result{}, r.createSecret(ctx, upgradePlan, secret)
+		return ctrl.Result{}, r.createObject(ctx, upgradePlan, secret)
 	}
 
 	drainControlPlane, drainWorker := parseDrainOptions(upgradePlan)
@@ -38,7 +38,7 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 		}
 
 		setInProgressCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "Control plane nodes are being upgraded")
-		return ctrl.Result{}, r.createPlan(ctx, upgradePlan, controlPlanePlan)
+		return ctrl.Result{}, r.createObject(ctx, upgradePlan, controlPlanePlan)
 	}
 
 	selector, err := metav1.LabelSelectorAsSelector(controlPlanePlan.Spec.NodeSelector)
@@ -66,7 +66,7 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 		}
 
 		setInProgressCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "Worker nodes are being upgraded")
-		return ctrl.Result{}, r.createPlan(ctx, upgradePlan, workerPlan)
+		return ctrl.Result{}, r.createObject(ctx, upgradePlan, workerPlan)
 	}
 
 	selector, err = metav1.LabelSelectorAsSelector(workerPlan.Spec.NodeSelector)

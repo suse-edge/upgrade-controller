@@ -138,21 +138,16 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 	return ctrl.Result{}, nil
 }
 
-func (r *UpgradePlanReconciler) createSecret(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, secret *corev1.Secret) error {
-	if err := r.Create(ctx, secret); err != nil {
-		return fmt.Errorf("creating secret: %w", err)
+func (r *UpgradePlanReconciler) createObject(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, object client.Object) error {
+	kind := object.GetObjectKind().GroupVersionKind().Kind
+
+	if err := r.Create(ctx, object); err != nil {
+		return err
 	}
 
-	r.Recorder.Eventf(upgradePlan, corev1.EventTypeNormal, "SecretCreated", "Secret created: %s/%s", secret.Namespace, secret.Name)
-	return nil
-}
-
-func (r *UpgradePlanReconciler) createPlan(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, plan *upgradecattlev1.Plan) error {
-	if err := r.Create(ctx, plan); err != nil {
-		return fmt.Errorf("creating upgrade plan: %w", err)
-	}
-
-	r.Recorder.Eventf(upgradePlan, corev1.EventTypeNormal, "PlanCreated", "Upgrade plan created: %s/%s", plan.Namespace, plan.Name)
+	reason := fmt.Sprintf("%sCreated", kind)
+	r.Recorder.Eventf(upgradePlan, corev1.EventTypeNormal, reason,
+		"%s created: %s/%s", kind, object.GetNamespace(), object.GetName())
 	return nil
 }
 

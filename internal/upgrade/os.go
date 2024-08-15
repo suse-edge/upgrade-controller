@@ -24,6 +24,8 @@ var osUpgradeScript string
 
 func OSUpgradeSecret(releaseOS *lifecyclev1alpha1.OperatingSystem, annotations map[string]string) (*corev1.Secret, error) {
 	const (
+		apiVersion = "v1"
+		kind       = "Secret"
 		secretName = "os-upgrade-secret"
 	)
 
@@ -52,6 +54,10 @@ func OSUpgradeSecret(releaseOS *lifecyclev1alpha1.OperatingSystem, annotations m
 	}
 
 	secret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       kind,
+			APIVersion: apiVersion,
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        secretName,
 			Namespace:   SUCNamespace,

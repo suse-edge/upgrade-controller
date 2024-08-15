@@ -35,7 +35,7 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgrade
 		}
 
 		setInProgressCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "Control plane nodes are being upgraded")
-		return ctrl.Result{}, r.createPlan(ctx, upgradePlan, controlPlanePlan)
+		return ctrl.Result{}, r.createObject(ctx, upgradePlan, controlPlanePlan)
 	}
 
 	selector, err := metav1.LabelSelectorAsSelector(controlPlanePlan.Spec.NodeSelector)
@@ -58,7 +58,7 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgrade
 		}
 
 		setInProgressCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "Worker nodes are being upgraded")
-		return ctrl.Result{}, r.createPlan(ctx, upgradePlan, workerPlan)
+		return ctrl.Result{}, r.createObject(ctx, upgradePlan, workerPlan)
 	}
 
 	selector, err = metav1.LabelSelectorAsSelector(workerPlan.Spec.NodeSelector)
