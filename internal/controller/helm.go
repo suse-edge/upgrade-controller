@@ -72,7 +72,8 @@ func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan
 	if chart.Annotations == nil {
 		chart.Annotations = map[string]string{}
 	}
-	chart.Annotations[upgrade.PlanAnnotation] = upgradePlan.Name
+	chart.Annotations[upgrade.PlanNameAnnotation] = upgradePlan.Name
+	chart.Annotations[upgrade.PlanNamespaceAnnotation] = upgradePlan.Namespace
 	chart.Annotations[upgrade.ReleaseAnnotation] = upgradePlan.Spec.ReleaseVersion
 	chart.Spec.ChartContent = ""
 	chart.Spec.Chart = releaseChart.Name
@@ -107,8 +108,9 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan
 			Name:      installedChart.Name,
 			Namespace: upgrade.ChartNamespace,
 			Annotations: map[string]string{
-				upgrade.PlanAnnotation:    upgradePlan.Name,
-				upgrade.ReleaseAnnotation: upgradePlan.Spec.ReleaseVersion,
+				upgrade.PlanNameAnnotation:      upgradePlan.Name,
+				upgrade.PlanNamespaceAnnotation: upgradePlan.Namespace,
+				upgrade.ReleaseAnnotation:       upgradePlan.Spec.ReleaseVersion,
 			},
 		},
 		Spec: helmcattlev1.HelmChartSpec{

@@ -54,7 +54,7 @@ func OSUpgradeSecret(releaseOS *lifecyclev1alpha1.OperatingSystem) (*corev1.Secr
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
-			Namespace: planNamespace,
+			Namespace: upgradeNamespace,
 		},
 		Type: corev1.SecretTypeOpaque,
 		StringData: map[string]string{
