@@ -14,9 +14,11 @@ const (
 
 	ControlPlaneLabel = "node-role.kubernetes.io/control-plane"
 
-	upgradeNamespace = "cattle-system"
-	controlPlaneKey  = "control-plane"
-	workersKey       = "workers"
+	HelmChartNamespace = "kube-system"
+	SUCNamespace       = "cattle-system"
+
+	controlPlaneKey = "control-plane"
+	workersKey      = "workers"
 )
 
 func baseUpgradePlan(name string, drain bool) *upgradecattlev1.Plan {
@@ -33,7 +35,7 @@ func baseUpgradePlan(name string, drain bool) *upgradecattlev1.Plan {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: upgradeNamespace,
+			Namespace: SUCNamespace,
 		},
 		Spec: upgradecattlev1.PlanSpec{
 			ServiceAccountName: serviceAccountName,

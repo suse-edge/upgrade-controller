@@ -39,6 +39,7 @@ import (
 	upgradecattlev1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 	"github.com/suse-edge/upgrade-controller/internal/controller"
+	"github.com/suse-edge/upgrade-controller/internal/upgrade"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -106,7 +107,9 @@ func main() {
 	var watchNamespaces map[string]cache.Config
 	if watchNamespace != "" {
 		watchNamespaces = map[string]cache.Config{
-			watchNamespace: {},
+			watchNamespace:             {},
+			upgrade.HelmChartNamespace: {},
+			upgrade.SUCNamespace:       {},
 		}
 	}
 

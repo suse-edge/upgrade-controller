@@ -106,7 +106,7 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      installedChart.Name,
-			Namespace: upgrade.ChartNamespace,
+			Namespace: upgrade.HelmChartNamespace,
 			Annotations: map[string]string{
 				upgrade.PlanNameAnnotation:      upgradePlan.Name,
 				upgrade.PlanNamespaceAnnotation: upgradePlan.Namespace,
@@ -159,7 +159,7 @@ func (r *UpgradePlanReconciler) upgradeHelmChart(ctx context.Context, upgradePla
 	}
 
 	job := &batchv1.Job{}
-	if err = r.Get(ctx, types.NamespacedName{Name: chart.Status.JobName, Namespace: upgrade.ChartNamespace}, job); err != nil {
+	if err = r.Get(ctx, types.NamespacedName{Name: chart.Status.JobName, Namespace: upgrade.HelmChartNamespace}, job); err != nil {
 		return upgrade.ChartStateUnknown, client.IgnoreNotFound(err)
 	}
 
