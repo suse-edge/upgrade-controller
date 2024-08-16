@@ -5,20 +5,30 @@ import (
 
 	upgradecattlev1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 const (
-	planNamespace     = "cattle-system"
-	PlanAnnotation    = "lifecycle.suse.com/upgrade-plan"
-	ReleaseAnnotation = "lifecycle.suse.com/release"
-	controlPlaneKey   = "control-plane"
-	workersKey        = "workers"
+	PlanNameAnnotation      = "lifecycle.suse.com/upgrade-plan-name"
+	PlanNamespaceAnnotation = "lifecycle.suse.com/upgrade-plan-namespace"
+	ReleaseAnnotation       = "lifecycle.suse.com/release"
 
 	ControlPlaneLabel = "node-role.kubernetes.io/control-plane"
+
+	HelmChartNamespace = "kube-system"
+	SUCNamespace       = "cattle-system"
+
+	controlPlaneKey = "control-plane"
+	workersKey      = "workers"
 )
 
-func baseUpgradePlan(name string, drain bool) *upgradecattlev1.Plan {
+func PlanIdentifierAnnotations(name, namespace string) map[string]string {
+	return map[string]string{
+		PlanNameAnnotation:      name,
+		PlanNamespaceAnnotation: namespace,
+	}
+}
+
+func baseUpgradePlan(name string, drain bool, annotations map[string]string) *upgradecattlev1.Plan {
 	const (
 		kind               = "Plan"
 		apiVersion         = "upgrade.cattle.io/v1"
@@ -31,8 +41,9 @@ func baseUpgradePlan(name string, drain bool) *upgradecattlev1.Plan {
 			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: planNamespace,
+			Name:        name,
+			Namespace:   SUCNamespace,
+			Annotations: annotations,
 		},
 		Spec: upgradecattlev1.PlanSpec{
 			ServiceAccountName: serviceAccountName,
@@ -52,11 +63,4 @@ func baseUpgradePlan(name string, drain bool) *upgradecattlev1.Plan {
 	}
 
 	return plan
-}
-
-func PlanNamespacedName(plan string) types.NamespacedName {
-	return types.NamespacedName{
-		Name:      plan,
-		Namespace: planNamespace,
-	}
 }

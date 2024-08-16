@@ -15,7 +15,9 @@ import (
 )
 
 func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, releaseVersion string, releaseOS *lifecyclev1alpha1.OperatingSystem) (ctrl.Result, error) {
-	secret, err := upgrade.OSUpgradeSecret(releaseOS)
+	identifierAnnotations := upgrade.PlanIdentifierAnnotations(upgradePlan.Name, upgradePlan.Namespace)
+
+	secret, err := upgrade.OSUpgradeSecret(releaseOS, identifierAnnotations)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("generating OS upgrade secret: %w", err)
 	}
@@ -25,18 +27,18 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 			return ctrl.Result{}, err
 		}
 
-		return ctrl.Result{}, r.createSecret(ctx, upgradePlan, secret)
+		return ctrl.Result{}, r.createObject(ctx, upgradePlan, secret)
 	}
 
 	drainControlPlane, drainWorker := parseDrainOptions(upgradePlan)
-	controlPlanePlan := upgrade.OSControlPlanePlan(releaseVersion, secret.Name, releaseOS, drainControlPlane)
+	controlPlanePlan := upgrade.OSControlPlanePlan(releaseVersion, secret.Name, releaseOS, drainControlPlane, identifierAnnotations)
 	if err = r.Get(ctx, client.ObjectKeyFromObject(controlPlanePlan), controlPlanePlan); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
 		}
 
 		setInProgressCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "Control plane nodes are being upgraded")
-		return ctrl.Result{}, r.createPlan(ctx, upgradePlan, controlPlanePlan)
+		return ctrl.Result{}, r.createObject(ctx, upgradePlan, controlPlanePlan)
 	}
 
 	selector, err := metav1.LabelSelectorAsSelector(controlPlanePlan.Spec.NodeSelector)
@@ -57,14 +59,14 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	workerPlan := upgrade.OSWorkerPlan(releaseVersion, secret.Name, releaseOS, drainWorker)
+	workerPlan := upgrade.OSWorkerPlan(releaseVersion, secret.Name, releaseOS, drainWorker, identifierAnnotations)
 	if err = r.Get(ctx, client.ObjectKeyFromObject(workerPlan), workerPlan); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
 		}
 
 		setInProgressCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "Worker nodes are being upgraded")
-		return ctrl.Result{}, r.createPlan(ctx, upgradePlan, workerPlan)
+		return ctrl.Result{}, r.createObject(ctx, upgradePlan, workerPlan)
 	}
 
 	selector, err = metav1.LabelSelectorAsSelector(workerPlan.Spec.NodeSelector)

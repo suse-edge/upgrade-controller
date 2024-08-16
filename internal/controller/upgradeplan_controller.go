@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -137,38 +138,18 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 	return ctrl.Result{}, nil
 }
 
-func (r *UpgradePlanReconciler) createSecret(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, secret *corev1.Secret) error {
-	if err := r.createObject(ctx, upgradePlan, secret); err != nil {
-		return fmt.Errorf("creating secret: %w", err)
+func (r *UpgradePlanReconciler) createObject(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, object client.Object) error {
+	// Extract the kind first since the data of the object pointer is modified during creation.
+	kind := object.GetObjectKind().GroupVersionKind().Kind
+
+	if err := r.Create(ctx, object); err != nil {
+		return err
 	}
 
-	r.recordPlanEvent(upgradePlan, corev1.EventTypeNormal, "SecretCreated", fmt.Sprintf("Secret created: %s/%s", secret.Namespace, secret.Name))
+	reason := fmt.Sprintf("%sCreated", kind)
+	r.Recorder.Eventf(upgradePlan, corev1.EventTypeNormal, reason,
+		"%s created: %s/%s", kind, object.GetNamespace(), object.GetName())
 	return nil
-}
-
-func (r *UpgradePlanReconciler) createPlan(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, plan *upgradecattlev1.Plan) error {
-	if err := r.createObject(ctx, upgradePlan, plan); err != nil {
-		return fmt.Errorf("creating upgrade plan: %w", err)
-	}
-
-	r.recordPlanEvent(upgradePlan, corev1.EventTypeNormal, "PlanCreated", fmt.Sprintf("Upgrade plan created: %s/%s", plan.Namespace, plan.Name))
-	return nil
-}
-
-func (r *UpgradePlanReconciler) createObject(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, obj client.Object) error {
-	if err := ctrl.SetControllerReference(upgradePlan, obj, r.Scheme); err != nil {
-		return fmt.Errorf("setting controller reference: %w", err)
-	}
-
-	if err := r.Create(ctx, obj); err != nil {
-		return fmt.Errorf("creating object: %w", err)
-	}
-
-	return nil
-}
-
-func (r *UpgradePlanReconciler) recordPlanEvent(upgradePlan *lifecyclev1alpha1.UpgradePlan, eventType, reason, msg string) {
-	r.Recorder.Eventf(upgradePlan, eventType, reason, msg)
 }
 
 func isHelmUpgradeFinished(plan *lifecyclev1alpha1.UpgradePlan, conditionType string) bool {
@@ -257,14 +238,22 @@ func (r *UpgradePlanReconciler) findUpgradePlanFromJob(ctx context.Context, job 
 		return []reconcile.Request{}
 	}
 
-	planName, ok := helmChart.Annotations[upgrade.PlanAnnotation]
+	return r.findUpgradePlanFromAnnotations(ctx, helmChart)
+}
+
+func (r *UpgradePlanReconciler) findUpgradePlanFromAnnotations(_ context.Context, object client.Object) []reconcile.Request {
+	annotations := object.GetAnnotations()
+
+	planName, ok := annotations[upgrade.PlanNameAnnotation]
 	if !ok || planName == "" {
-		// Helm chart is not managed by the Upgrade controller.
+		// Object is not managed by the Upgrade controller.
 		return []reconcile.Request{}
 	}
 
+	planNamespace := annotations[upgrade.PlanNamespaceAnnotation]
+
 	return []reconcile.Request{
-		{NamespacedName: upgrade.PlanNamespacedName(planName)},
+		{NamespacedName: types.NamespacedName{Namespace: planNamespace, Name: planName}},
 	}
 }
 
@@ -284,7 +273,7 @@ func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&lifecyclev1alpha1.UpgradePlan{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Owns(&upgradecattlev1.Plan{}, builder.WithPredicates(predicate.Funcs{
+		Watches(&upgradecattlev1.Plan{}, handler.EnqueueRequestsFromMapFunc(r.findUpgradePlanFromAnnotations), builder.WithPredicates(predicate.Funcs{
 			CreateFunc: func(e event.CreateEvent) bool {
 				return false
 			},
@@ -319,6 +308,6 @@ func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return false
 			},
 		})).
-		Owns(&corev1.Secret{}).
+		Watches(&corev1.Secret{}, handler.EnqueueRequestsFromMapFunc(r.findUpgradePlanFromAnnotations)).
 		Complete(r)
 }

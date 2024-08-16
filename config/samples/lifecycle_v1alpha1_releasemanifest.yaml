@@ -5,7 +5,7 @@ metadata:
     app.kubernetes.io/name: upgrade-controller
     app.kubernetes.io/managed-by: kustomize
   name: releasemanifest-sample
-  namespace: cattle-system
+  namespace: upgrade-controller-system
 spec:
   releaseVersion: 3.0.1
   components:

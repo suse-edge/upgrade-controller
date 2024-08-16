@@ -72,7 +72,8 @@ func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan
 	if chart.Annotations == nil {
 		chart.Annotations = map[string]string{}
 	}
-	chart.Annotations[upgrade.PlanAnnotation] = upgradePlan.Name
+	chart.Annotations[upgrade.PlanNameAnnotation] = upgradePlan.Name
+	chart.Annotations[upgrade.PlanNamespaceAnnotation] = upgradePlan.Namespace
 	chart.Annotations[upgrade.ReleaseAnnotation] = upgradePlan.Spec.ReleaseVersion
 	chart.Spec.ChartContent = ""
 	chart.Spec.Chart = releaseChart.Name
@@ -98,18 +99,18 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan
 		}
 	}
 
+	annotations := upgrade.PlanIdentifierAnnotations(upgradePlan.Name, upgradePlan.Namespace)
+	annotations[upgrade.ReleaseAnnotation] = upgradePlan.Spec.ReleaseVersion
+
 	chart := &helmcattlev1.HelmChart{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "HelmChart",
 			APIVersion: "helm.cattle.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      installedChart.Name,
-			Namespace: upgrade.ChartNamespace,
-			Annotations: map[string]string{
-				upgrade.PlanAnnotation:    upgradePlan.Name,
-				upgrade.ReleaseAnnotation: upgradePlan.Spec.ReleaseVersion,
-			},
+			Name:        installedChart.Name,
+			Namespace:   upgrade.HelmChartNamespace,
+			Annotations: annotations,
 		},
 		Spec: helmcattlev1.HelmChartSpec{
 			Chart:           releaseChart.Name,
@@ -121,7 +122,7 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan
 		},
 	}
 
-	return r.Create(ctx, chart)
+	return r.createObject(ctx, upgradePlan, chart)
 }
 
 func (r *UpgradePlanReconciler) upgradeHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, releaseChart *lifecyclev1alpha1.HelmChart) (upgrade.HelmChartState, error) {
@@ -157,7 +158,7 @@ func (r *UpgradePlanReconciler) upgradeHelmChart(ctx context.Context, upgradePla
 	}
 
 	job := &batchv1.Job{}
-	if err = r.Get(ctx, types.NamespacedName{Name: chart.Status.JobName, Namespace: upgrade.ChartNamespace}, job); err != nil {
+	if err = r.Get(ctx, types.NamespacedName{Name: chart.Status.JobName, Namespace: upgrade.HelmChartNamespace}, job); err != nil {
 		return upgrade.ChartStateUnknown, client.IgnoreNotFound(err)
 	}
 
