@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"time"
 
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 	"github.com/suse-edge/upgrade-controller/internal/upgrade"
@@ -53,7 +54,7 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 
 	if !isOSUpgraded(nodeList, selector, releaseOS.PrettyName) {
 		setInProgressCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "Control plane nodes are being upgraded")
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	} else if controlPlaneOnlyCluster(nodeList) {
 		setSuccessfulCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "All cluster nodes are upgraded")
 		return ctrl.Result{Requeue: true}, nil
@@ -76,7 +77,7 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 
 	if !isOSUpgraded(nodeList, selector, releaseOS.PrettyName) {
 		setInProgressCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "Worker nodes are being upgraded")
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 
 	setSuccessfulCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "All cluster nodes are upgraded")
