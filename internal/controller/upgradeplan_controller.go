@@ -139,6 +139,7 @@ func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *li
 }
 
 func (r *UpgradePlanReconciler) createObject(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, object client.Object) error {
+	// Extract the kind first since the data of the object pointer is modified during creation.
 	kind := object.GetObjectKind().GroupVersionKind().Kind
 
 	if err := r.Create(ctx, object); err != nil {
