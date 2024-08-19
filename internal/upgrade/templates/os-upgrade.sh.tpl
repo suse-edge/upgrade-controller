@@ -42,15 +42,20 @@ executeUpgrade(){
         exit 1
     fi
 
+    # Lines that will be appended to the systemd.service 'ExecStartPre' configuration
+    EXEC_START_PRE_LINES=""
+
     # Determine whether this is a package update or a migration
     if [ "${RELEASE_CPE}" == "${CURRENT_CPE}" ]; then
         # Package update if both CPEs are the same
-        EXEC_START_PRE=""
         EXEC_START="/usr/sbin/transactional-update cleanup up"
         SERVICE_NAME="os-pkg-update.service"
     else
         # Migration if the CPEs are different
-        EXEC_START_PRE="/usr/sbin/transactional-update cleanup run rpm --import {{.RepoGPGKey}}"
+        EXEC_START_PRE_PKG_UPGRADE="ExecStartPre=/usr/sbin/transactional-update cleanup up"
+        EXEC_START_PRE_RPM_IMPORT="ExecStartPre=/usr/sbin/transactional-update --continue run rpm --import {{.RepoGPGKey}}"
+        EXEC_START_PRE_LINES=$(echo -e "${EXEC_START_PRE_PKG_UPGRADE}\n${EXEC_START_PRE_RPM_IMPORT}")
+
         EXEC_START="/usr/sbin/transactional-update --continue run zypper migration --non-interactive --product {{.ZypperID}}/{{.Version}}/${SYSTEM_ARCH} --root /"
         SERVICE_NAME="os-migration.service"
     fi
@@ -71,8 +76,8 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStartPre=${EXEC_START_PRE}
-ExecStart=${EXEC_START}
+${EXEC_START_PRE_LINES:+$EXEC_START_PRE_LINES
+}ExecStart=${EXEC_START}
 IOSchedulingClass=best-effort
 IOSchedulingPriority=7
 EOF
