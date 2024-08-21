@@ -134,7 +134,7 @@ func (in *OperatingSystem) DeepCopyInto(out *OperatingSystem) {
 	*out = *in
 	if in.SupportedArchs != nil {
 		in, out := &in.SupportedArchs, &out.SupportedArchs
-		*out = make([]string, len(*in))
+		*out = make([]Arch, len(*in))
 		copy(*out, *in)
 	}
 }
