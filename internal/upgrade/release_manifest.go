@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ReleaseManifestInstallJob(image, version, namespace string, annotations map[string]string) *batchv1.Job {
+func ReleaseManifestInstallJob(image, version, serviceAccount, namespace string, annotations map[string]string) *batchv1.Job {
 	version = strings.TrimPrefix(version, "v")
 	workloadName := fmt.Sprintf("apply-release-manifest-%s", strings.ReplaceAll(version, ".", "-"))
 	image = fmt.Sprintf("%s:%s", image, version)
@@ -40,7 +40,7 @@ func ReleaseManifestInstallJob(image, version, namespace string, annotations map
 						},
 					},
 					RestartPolicy:      "OnFailure",
-					ServiceAccountName: "upgrade-controller-controller-manager",
+					ServiceAccountName: serviceAccount,
 				},
 			},
 			TTLSecondsAfterFinished: &ttl,

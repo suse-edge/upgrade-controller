@@ -67,6 +67,7 @@ func main() {
 	var enableHTTP2 bool
 	var watchNamespace string
 	var releaseManifestImage string
+	var serviceAccountName string
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metric endpoint binds to. "+
 		"Use the port :8080. If not set, it will be 0 in order to disable the metrics server")
@@ -82,6 +83,8 @@ func main() {
 		"Namespace that the controller watches to reconcile resources.")
 	flag.StringVar(&releaseManifestImage, "release-manifest-image", os.Getenv("RELEASE_MANIFEST_IMAGE"),
 		"Source of release manifest container images")
+	flag.StringVar(&serviceAccountName, "service-account-name", os.Getenv("SERVICE_ACCOUNT_NAME"),
+		"Service account of the controller")
 
 	opts := zap.Options{
 		Development: true,
@@ -159,6 +162,7 @@ func main() {
 		Client:               mgr.GetClient(),
 		Scheme:               mgr.GetScheme(),
 		Recorder:             mgr.GetEventRecorderFor("upgrade-plan-controller"),
+		ServiceAccount:       serviceAccountName,
 		ReleaseManifestImage: releaseManifestImage,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "UpgradePlan")

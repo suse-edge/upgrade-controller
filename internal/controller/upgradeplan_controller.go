@@ -50,6 +50,7 @@ type UpgradePlanReconciler struct {
 	client.Client
 	Scheme               *runtime.Scheme
 	Recorder             record.EventRecorder
+	ServiceAccount       string
 	ReleaseManifestImage string
 }
 
