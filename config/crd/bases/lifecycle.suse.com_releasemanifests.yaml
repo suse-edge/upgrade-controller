@@ -71,7 +71,11 @@ spec:
                         type: string
                       supportedArchs:
                         items:
+                          enum:
+                          - x86_64
+                          - aarch64
                           type: string
+                        minItems: 1
                         type: array
                       version:
                         type: string
