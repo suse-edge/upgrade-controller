@@ -9,12 +9,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ReleaseManifestInstallJob(version, namespace string, annotations map[string]string) *batchv1.Job {
-	const imageName = "registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/suse/release-manifest"
-
+func ReleaseManifestInstallJob(image, version, namespace string, annotations map[string]string) *batchv1.Job {
 	version = strings.TrimPrefix(version, "v")
 	workloadName := fmt.Sprintf("apply-release-manifest-%s", strings.ReplaceAll(version, ".", "-"))
-	image := fmt.Sprintf("%s:%s", imageName, version)
+	image = fmt.Sprintf("%s:%s", image, version)
 	ttl := int32(0)
 
 	return &batchv1.Job{

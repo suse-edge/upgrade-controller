@@ -48,8 +48,9 @@ import (
 // UpgradePlanReconciler reconciles a UpgradePlan object
 type UpgradePlanReconciler struct {
 	client.Client
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	Scheme               *runtime.Scheme
+	Recorder             record.EventRecorder
+	ReleaseManifestImage string
 }
 
 // +kubebuilder:rbac:groups=lifecycle.suse.com,resources=upgradeplans,verbs=get;list;watch;create;update;patch;delete
