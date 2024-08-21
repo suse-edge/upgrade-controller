@@ -25,23 +25,7 @@ executeUpgrade(){
     # Common Platform Enumeration (CPE) that the system is currently running with
     CURRENT_CPE=`cat /etc/os-release | grep -w CPE_NAME | cut -d "=" -f 2 | tr -d '"'`
 
-    # Determine whether architecture is supported
     SYSTEM_ARCH=`arch`
-    IFS=' ' read -r -a SUPPORTED_ARCH_ARRAY <<< $(echo "{{.SupportedArchs}}" | tr -d '[]')
-
-    found=false
-    for arch in "${SUPPORTED_ARCH_ARRAY[@]}"; do
-        if [ "${SYSTEM_ARCH}" == ${arch} ]; then
-            found=true
-            break
-        fi
-    done
-
-    if [ ${found} == false ]; then
-        echo "Operating system is running an unsupported architecture. System arch: ${SYSTEM_ARCH}. Supported archs: ${SUPPORTED_ARCH_ARRAY[*]}"
-        exit 1
-    fi
-
     # Lines that will be appended to the systemd.service 'ExecStartPre' configuration
     EXEC_START_PRE_LINES=""
 
