@@ -35,17 +35,15 @@ func OSUpgradeSecret(releaseOS *lifecyclev1alpha1.OperatingSystem, annotations m
 	}
 
 	values := struct {
-		CPEScheme      string
-		RepoGPGKey     string
-		ZypperID       string
-		Version        string
-		SupportedArchs []string
+		CPEScheme  string
+		RepoGPGKey string
+		ZypperID   string
+		Version    string
 	}{
-		CPEScheme:      releaseOS.CPEScheme,
-		RepoGPGKey:     releaseOS.RepoGPGPath,
-		ZypperID:       releaseOS.ZypperID,
-		Version:        releaseOS.Version,
-		SupportedArchs: releaseOS.SupportedArchs,
+		CPEScheme:  releaseOS.CPEScheme,
+		RepoGPGKey: releaseOS.RepoGPGPath,
+		ZypperID:   releaseOS.ZypperID,
+		Version:    releaseOS.Version,
 	}
 
 	var buff bytes.Buffer
