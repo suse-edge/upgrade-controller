@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"fmt"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -48,11 +49,12 @@ type Workloads struct {
 }
 
 type HelmChart struct {
-	ReleaseName string `json:"releaseName"`
-	Name        string `json:"chart"`
-	Repository  string `json:"repository,omitempty"`
-	Version     string `json:"version"`
-	PrettyName  string `json:"prettyName"`
+	ReleaseName string                `json:"releaseName"`
+	Name        string                `json:"chart"`
+	Repository  string                `json:"repository,omitempty"`
+	Version     string                `json:"version"`
+	PrettyName  string                `json:"prettyName"`
+	Values      *apiextensionsv1.JSON `json:"values,omitempty"`
 
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:Schemaless
