@@ -17,7 +17,14 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	ArchTypeX86 Arch = "x86_64"
+	ArchTypeARM Arch = "aarch64"
 )
 
 // ReleaseManifestSpec defines the desired state of ReleaseManifest
@@ -65,12 +72,28 @@ type KubernetesDistribution struct {
 }
 
 type OperatingSystem struct {
-	Version        string   `json:"version"`
-	ZypperID       string   `json:"zypperID"`
-	CPEScheme      string   `json:"cpeScheme"`
-	RepoGPGPath    string   `json:"repoGPGPath"`
-	SupportedArchs []string `json:"supportedArchs"`
-	PrettyName     string   `json:"prettyName"`
+	Version     string `json:"version"`
+	ZypperID    string `json:"zypperID"`
+	CPEScheme   string `json:"cpeScheme"`
+	RepoGPGPath string `json:"repoGPGPath"`
+	// +kubebuilder:validation:MinItems=1
+	SupportedArchs []Arch `json:"supportedArchs"`
+	PrettyName     string `json:"prettyName"`
+}
+
+// +kubebuilder:validation:Enum=x86_64;aarch64
+type Arch string
+
+func (a Arch) Short() string {
+	switch a {
+	case ArchTypeX86:
+		return "amd64"
+	case ArchTypeARM:
+		return "arm64"
+	default:
+		message := fmt.Sprintf("unknown arch: %s", a)
+		panic(message)
+	}
 }
 
 // +kubebuilder:object:root=true
