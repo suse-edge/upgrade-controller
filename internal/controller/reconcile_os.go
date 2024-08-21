@@ -18,6 +18,16 @@ import (
 func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, releaseVersion string, releaseOS *lifecyclev1alpha1.OperatingSystem) (ctrl.Result, error) {
 	identifierAnnotations := upgrade.PlanIdentifierAnnotations(upgradePlan.Name, upgradePlan.Namespace)
 
+	nodeList := &corev1.NodeList{}
+	if err := r.List(ctx, nodeList); err != nil {
+		return ctrl.Result{}, fmt.Errorf("listing nodes: %w", err)
+	}
+
+	if err := validateOSArch(nodeList, releaseOS.SupportedArchs); err != nil {
+		setFailedCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "Cluster nodes are running unsupported architectures")
+		return ctrl.Result{}, fmt.Errorf("validating cluster node OS architecture: %w", err)
+	}
+
 	secret, err := upgrade.OSUpgradeSecret(releaseOS, identifierAnnotations)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("generating OS upgrade secret: %w", err)
@@ -45,11 +55,6 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 	selector, err := metav1.LabelSelectorAsSelector(controlPlanePlan.Spec.NodeSelector)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("parsing node selector: %w", err)
-	}
-
-	nodeList := &corev1.NodeList{}
-	if err := r.List(ctx, nodeList); err != nil {
-		return ctrl.Result{}, fmt.Errorf("listing nodes: %w", err)
 	}
 
 	if !isOSUpgraded(nodeList, selector, releaseOS.PrettyName) {
@@ -108,4 +113,24 @@ func isOSUpgraded(nodeList *corev1.NodeList, selector labels.Selector, osPrettyN
 	}
 
 	return true
+}
+
+func validateOSArch(nodeList *corev1.NodeList, supportedArchs []lifecyclev1alpha1.Arch) error {
+	supportedArchMap := map[string]bool{}
+	for _, arch := range supportedArchs {
+		// add both the long and short architecture name
+		// to avoid any future problems related to changing
+		// what 'node.Status.NodeInfo.Architecture' outputs
+		supportedArchMap[string(arch)] = true
+		supportedArchMap[arch.Short()] = true
+	}
+
+	for _, node := range nodeList.Items {
+		nodeArch := node.Status.NodeInfo.Architecture
+		if _, ok := supportedArchMap[nodeArch]; !ok {
+			return fmt.Errorf("unsuported arch '%s' for '%s' node. Supported archs: %s", nodeArch, node.Name, supportedArchs)
+		}
+	}
+
+	return nil
 }
