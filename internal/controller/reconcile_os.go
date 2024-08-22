@@ -41,7 +41,7 @@ func (r *UpgradePlanReconciler) reconcileOS(ctx context.Context, upgradePlan *li
 		return ctrl.Result{}, r.createObject(ctx, upgradePlan, secret)
 	}
 
-	drainControlPlane, drainWorker := parseDrainOptions(upgradePlan)
+	drainControlPlane, drainWorker := isDrainPossible(nodeList, upgradePlan)
 	controlPlanePlan := upgrade.OSControlPlanePlan(releaseVersion, secret.Name, releaseOS, drainControlPlane, identifierAnnotations)
 	if err = r.Get(ctx, client.ObjectKeyFromObject(controlPlanePlan), controlPlanePlan); err != nil {
 		if !errors.IsNotFound(err) {
