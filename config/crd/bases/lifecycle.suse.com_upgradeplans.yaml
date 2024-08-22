@@ -48,6 +48,23 @@ spec:
                   worker:
                     type: boolean
                 type: object
+              helmValues:
+                description: |-
+                  HelmValues specifies additional values for components installed via Helm.
+                  It is only advised to use this field for values that are critical for upgrades.
+                  Standard chart value updates should be performed after
+                  the respective charts have been upgraded to the next version.
+                items:
+                  properties:
+                    chart:
+                      type: string
+                    values:
+                      x-kubernetes-preserve-unknown-fields: true
+                  required:
+                  - chart
+                  - values
+                  type: object
+                type: array
               releaseVersion:
                 description: |-
                   ReleaseVersion specifies the target version for platform upgrade.

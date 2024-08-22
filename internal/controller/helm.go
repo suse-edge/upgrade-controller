@@ -71,7 +71,15 @@ func retrieveHelmRelease(name string) (*helmrelease.Release, error) {
 func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, chart *helmcattlev1.HelmChart, releaseChart *lifecyclev1alpha1.HelmChart) error {
 	backoffLimit := int32(6)
 
-	values, err := mergeHelmValues(chart.Spec.ValuesContent, releaseChart.Values)
+	var userValues *apiextensionsv1.JSON
+	for _, h := range upgradePlan.Spec.HelmValues {
+		if releaseChart.Name == h.Chart {
+			userValues = h.Values
+			break
+		}
+	}
+
+	values, err := mergeHelmValues(chart.Spec.ValuesContent, releaseChart.Values, userValues)
 	if err != nil {
 		return fmt.Errorf("merging chart values: %w", err)
 	}
@@ -97,7 +105,15 @@ func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan
 func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, installedChart *helmrelease.Release, releaseChart *lifecyclev1alpha1.HelmChart) error {
 	backoffLimit := int32(6)
 
-	values, err := mergeHelmValues(installedChart.Config, releaseChart.Values)
+	var userValues *apiextensionsv1.JSON
+	for _, h := range upgradePlan.Spec.HelmValues {
+		if releaseChart.Name == h.Chart {
+			userValues = h.Values
+			break
+		}
+	}
+
+	values, err := mergeHelmValues(installedChart.Config, releaseChart.Values, userValues)
 	if err != nil {
 		return fmt.Errorf("merging chart values: %w", err)
 	}
@@ -128,7 +144,7 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan
 	return r.createObject(ctx, upgradePlan, chart)
 }
 
-func mergeHelmValues(installedValues any, newValues *apiextensionsv1.JSON) ([]byte, error) {
+func mergeHelmValues(installedValues any, releaseValues, userValues *apiextensionsv1.JSON) ([]byte, error) {
 	values := map[string]any{}
 
 	switch installed := installedValues.(type) {
@@ -146,11 +162,21 @@ func mergeHelmValues(installedValues any, newValues *apiextensionsv1.JSON) ([]by
 		return nil, fmt.Errorf("unexpected type %T of installed values", installedValues)
 	}
 
-	if newValues != nil && len(newValues.Raw) > 0 {
+	if releaseValues != nil && len(releaseValues.Raw) > 0 {
 		var v map[string]any
 
-		if err := json.Unmarshal(newValues.Raw, &v); err != nil {
-			return nil, fmt.Errorf("unmarshaling additional chart values: %w", err)
+		if err := json.Unmarshal(releaseValues.Raw, &v); err != nil {
+			return nil, fmt.Errorf("unmarshaling additional release values: %w", err)
+		}
+
+		maps.Copy(values, v)
+	}
+
+	if userValues != nil && len(userValues.Raw) > 0 {
+		var v map[string]any
+
+		if err := json.Unmarshal(userValues.Raw, &v); err != nil {
+			return nil, fmt.Errorf("unmarshaling additional user values: %w", err)
 		}
 
 		maps.Copy(values, v)

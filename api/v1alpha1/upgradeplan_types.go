@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"fmt"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -53,6 +54,12 @@ type UpgradePlanSpec struct {
 	// DisableDrain specifies whether control-plane and worker nodes drain should be disabled.
 	// +optional
 	DisableDrain DisableDrain `json:"disableDrain"`
+	// HelmValues specifies additional values for components installed via Helm.
+	// It is only advised to use this field for values that are critical for upgrades.
+	// Standard chart value updates should be performed after
+	// the respective charts have been upgraded to the next version.
+	// +optional
+	HelmValues []HelmValues `json:"helmValues"`
 }
 
 type DisableDrain struct {
@@ -60,6 +67,11 @@ type DisableDrain struct {
 	ControlPlane bool `json:"controlPlane"`
 	// +optional
 	Worker bool `json:"worker"`
+}
+
+type HelmValues struct {
+	Chart  string                `json:"chart"`
+	Values *apiextensionsv1.JSON `json:"values"`
 }
 
 // UpgradePlanStatus defines the observed state of UpgradePlan
