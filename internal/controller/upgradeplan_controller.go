@@ -48,8 +48,10 @@ import (
 // UpgradePlanReconciler reconciles a UpgradePlan object
 type UpgradePlanReconciler struct {
 	client.Client
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	Scheme               *runtime.Scheme
+	Recorder             record.EventRecorder
+	ServiceAccount       string
+	ReleaseManifestImage string
 }
 
 // +kubebuilder:rbac:groups=lifecycle.suse.com,resources=upgradeplans,verbs=get;list;watch;create;update;patch;delete
@@ -59,12 +61,12 @@ type UpgradePlanReconciler struct {
 // +kubebuilder:rbac:groups="",resources=nodes,verbs=watch;list
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;delete;create;watch
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
-// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create
 // +kubebuilder:rbac:groups=batch,resources=jobs/status,verbs=get
 // +kubebuilder:rbac:groups=helm.cattle.io,resources=helmcharts,verbs=get;update;list;watch;create
 // +kubebuilder:rbac:groups=helm.cattle.io,resources=helmcharts/status,verbs=get
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get
-// +kubebuilder:rbac:groups=lifecycle.suse.com,resources=releasemanifests,verbs=get;list;watch
+// +kubebuilder:rbac:groups=lifecycle.suse.com,resources=releasemanifests,verbs=get;list;watch;create
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -84,28 +86,14 @@ func (r *UpgradePlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	return result, errors.Join(err, r.Status().Update(ctx, plan))
 }
 
-func (r *UpgradePlanReconciler) getReleaseManifest(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) (*lifecyclev1alpha1.ReleaseManifest, error) {
-	manifests := &lifecyclev1alpha1.ReleaseManifestList{}
-	listOpts := &client.ListOptions{
-		Namespace: upgradePlan.Namespace,
-	}
-	if err := r.List(ctx, manifests, listOpts); err != nil {
-		return nil, fmt.Errorf("listing release manifests in cluster: %w", err)
-	}
-
-	for _, manifest := range manifests.Items {
-		if manifest.Spec.ReleaseVersion == upgradePlan.Spec.ReleaseVersion {
-			return &manifest, nil
-		}
-	}
-
-	return nil, fmt.Errorf("release manifest with version %s not found", upgradePlan.Spec.ReleaseVersion)
-}
-
 func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) (ctrl.Result, error) {
-	release, err := r.getReleaseManifest(ctx, upgradePlan)
+	release, err := r.retrieveReleaseManifest(ctx, upgradePlan)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("retrieving release manifest: %w", err)
+		if !errors.Is(err, errReleaseManifestNotFound) {
+			return ctrl.Result{}, fmt.Errorf("retrieving release manifest: %w", err)
+		}
+
+		return ctrl.Result{}, r.createReleaseManifest(ctx, upgradePlan)
 	}
 
 	if len(upgradePlan.Status.Conditions) == 0 {
@@ -223,10 +211,16 @@ func setSkippedCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, mes
 }
 
 func (r *UpgradePlanReconciler) findUpgradePlanFromJob(ctx context.Context, job client.Object) []reconcile.Request {
+	// Check whether the Job was created by the Upgrade Controller first
+	requests := r.findUpgradePlanFromAnnotations(ctx, job)
+	if len(requests) != 0 {
+		return requests
+	}
+
+	// Check whether the Job was created by the Helm Controller
 	jobLabels := job.GetLabels()
 	chartName, ok := jobLabels[chart.Label]
 	if !ok || chartName == "" {
-		// Job is not scheduled by the Helm controller.
 		return []reconcile.Request{}
 	}
 
