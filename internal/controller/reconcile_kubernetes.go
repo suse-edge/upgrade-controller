@@ -28,7 +28,7 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgrade
 	}
 
 	identifierAnnotations := upgrade.PlanIdentifierAnnotations(upgradePlan.Name, upgradePlan.Namespace)
-	drainControlPlane, drainWorker := isDrainPossible(nodeList, upgradePlan)
+	drainControlPlane, drainWorker := parseDrainOptions(nodeList, upgradePlan)
 	controlPlanePlan := upgrade.KubernetesControlPlanePlan(kubernetesVersion, drainControlPlane, identifierAnnotations)
 	if err = r.Get(ctx, client.ObjectKeyFromObject(controlPlanePlan), controlPlanePlan); err != nil {
 		if !errors.IsNotFound(err) {

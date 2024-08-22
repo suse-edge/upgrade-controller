@@ -157,7 +157,7 @@ func isHelmUpgradeFinished(plan *lifecyclev1alpha1.UpgradePlan, conditionType st
 	return false
 }
 
-func isDrainPossible(nodeList *corev1.NodeList, plan *lifecyclev1alpha1.UpgradePlan) (drainControlPlane bool, drainWorker bool) {
+func parseDrainOptions(nodeList *corev1.NodeList, plan *lifecyclev1alpha1.UpgradePlan) (drainControlPlane bool, drainWorker bool) {
 	var controlPlaneCounter, workerCounter int
 	for _, node := range nodeList.Items {
 		if node.Labels[upgrade.ControlPlaneLabel] != "true" {
