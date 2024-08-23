@@ -157,18 +157,39 @@ func isHelmUpgradeFinished(plan *lifecyclev1alpha1.UpgradePlan, conditionType st
 	return false
 }
 
-func parseDrainOptions(plan *lifecyclev1alpha1.UpgradePlan) (drainControlPlane bool, drainWorker bool) {
-	drainControlPlane = true
-	drainWorker = true
-
-	if plan.Spec.Drain != nil {
-		if plan.Spec.Drain.ControlPlane != nil {
-			drainControlPlane = *plan.Spec.Drain.ControlPlane
+func parseDrainOptions(nodeList *corev1.NodeList, plan *lifecyclev1alpha1.UpgradePlan) (drainControlPlane bool, drainWorker bool) {
+	var controlPlaneCounter, workerCounter int
+	for _, node := range nodeList.Items {
+		if node.Labels[upgrade.ControlPlaneLabel] != "true" {
+			workerCounter++
+		} else {
+			controlPlaneCounter++
 		}
+	}
 
-		if plan.Spec.Drain.Worker != nil {
-			drainWorker = *plan.Spec.Drain.Worker
-		}
+	switch {
+	case controlPlaneCounter > 1 && workerCounter <= 1:
+		drainControlPlane = true
+		drainWorker = false
+	case controlPlaneCounter == 1 && workerCounter > 1:
+		drainControlPlane = false
+		drainWorker = true
+	case controlPlaneCounter <= 1 && workerCounter <= 1:
+		drainControlPlane = false
+		drainWorker = false
+	default:
+		drainControlPlane = true
+		drainWorker = true
+	}
+
+	// If user has explicitly disabled control-plane drains
+	if plan.Spec.DisableDrain.ControlPlane {
+		drainControlPlane = false
+	}
+
+	// If user has explicitly disabled worker drains
+	if plan.Spec.DisableDrain.Worker {
+		drainWorker = false
 	}
 
 	return drainControlPlane, drainWorker
