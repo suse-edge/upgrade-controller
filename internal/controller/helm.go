@@ -169,7 +169,7 @@ func mergeHelmValues(installedValues any, releaseValues, userValues *apiextensio
 			return nil, fmt.Errorf("unmarshaling additional release values: %w", err)
 		}
 
-		maps.Copy(values, v)
+		values = mergeMaps(values, v)
 	}
 
 	if userValues != nil && len(userValues.Raw) > 0 {
@@ -179,7 +179,7 @@ func mergeHelmValues(installedValues any, releaseValues, userValues *apiextensio
 			return nil, fmt.Errorf("unmarshaling additional user values: %w", err)
 		}
 
-		maps.Copy(values, v)
+		values = mergeMaps(values, v)
 	}
 
 	if len(values) == 0 {
@@ -192,6 +192,25 @@ func mergeHelmValues(installedValues any, releaseValues, userValues *apiextensio
 	}
 
 	return v, nil
+}
+
+func mergeMaps(m1, m2 map[string]any) map[string]any {
+	out := make(map[string]any, len(m1))
+	for k, v := range m1 {
+		out[k] = v
+	}
+
+	for k, v := range m2 {
+		if v, ok := v.(map[string]any); ok {
+			if inner, ok := out[k].(map[string]any); ok {
+				out[k] = mergeMaps(inner, v)
+				continue
+			}
+		}
+		out[k] = v
+	}
+
+	return out
 }
 
 func (r *UpgradePlanReconciler) upgradeHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, releaseChart *lifecyclev1alpha1.HelmChart) (upgrade.HelmChartState, error) {

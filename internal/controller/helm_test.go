@@ -10,6 +10,38 @@ import (
 )
 
 func Test_MergeHelmValues(t *testing.T) {
+	installedValuesStr := `{
+  "global": {
+    "ironicIP": "147.28.230.5"
+  },
+  "metal3-ironic": {
+    "service": {
+      "type": "LoadBalancer"
+    },
+    "persistence": {
+      "ironic": {
+        "storageClass": "longhorn"
+      }
+    }
+  }
+}`
+
+	installedValuesMap := map[string]interface{}{
+		"global": map[string]interface{}{
+			"ironicIP": "147.28.230.5",
+		},
+		"metal3-ironic": map[string]interface{}{
+			"service": map[string]interface{}{
+				"type": "LoadBalancer",
+			},
+			"persistence": map[string]interface{}{
+				"ironic": map[string]interface{}{
+					"storageClass": "longhorn",
+				},
+			},
+		},
+	}
+
 	tests := []struct {
 		name            string
 		installedValues any
@@ -38,16 +70,16 @@ func Test_MergeHelmValues(t *testing.T) {
 		},
 		{
 			name:            "Non-empty installed values string, empty release values",
-			installedValues: `{"global":{"ironicIP":"147.28.230.5"},"metal3-mariadb":{"persistence":{"storageClass":"longhorn"}}}`,
-			expectedValues:  []byte(`{"global":{"ironicIP":"147.28.230.5"},"metal3-mariadb":{"persistence":{"storageClass":"longhorn"}}}`),
+			installedValues: installedValuesStr,
+			expectedValues:  []byte(`{"global":{"ironicIP":"147.28.230.5"},"metal3-ironic":{"persistence":{"ironic":{"storageClass":"longhorn"}},"service":{"type":"LoadBalancer"}}}`),
 		},
 		{
 			name:            "Non-empty installed values string, non-empty release values",
-			installedValues: `{"global":{"ironicIP":"147.28.230.5"},"metal3-mariadb":{"persistence":{"storageClass":"longhorn"}}}`,
+			installedValues: installedValuesStr,
 			releaseValues: &apiextensionsv1.JSON{
 				Raw: []byte(`{"global": {"ironicIP": "147.28.230.105"}}`),
 			},
-			expectedValues: []byte(`{"global":{"ironicIP":"147.28.230.105"},"metal3-mariadb":{"persistence":{"storageClass":"longhorn"}}}`),
+			expectedValues: []byte(`{"global":{"ironicIP":"147.28.230.105"},"metal3-ironic":{"persistence":{"ironic":{"storageClass":"longhorn"}},"service":{"type":"LoadBalancer"}}}`),
 		},
 		{
 			name:            "Empty installed values map, empty release values",
@@ -63,55 +95,28 @@ func Test_MergeHelmValues(t *testing.T) {
 			expectedValues: []byte(`{"global":{"ironicIP":"147.28.230.5"}}`),
 		},
 		{
-			name: "Non-empty installed values map, empty release values",
-			installedValues: map[string]interface{}{
-				"global": map[string]interface{}{
-					"ironicIP": "147.28.230.5",
-				},
-				"metal3-mariadb": map[string]interface{}{
-					"persistence": map[string]string{
-						"storageClass": "longhorn",
-					},
-				},
-			},
-			expectedValues: []byte(`{"global":{"ironicIP":"147.28.230.5"},"metal3-mariadb":{"persistence":{"storageClass":"longhorn"}}}`),
+			name:            "Non-empty installed values map, empty release values",
+			installedValues: installedValuesMap,
+			expectedValues:  []byte(`{"global":{"ironicIP":"147.28.230.5"},"metal3-ironic":{"persistence":{"ironic":{"storageClass":"longhorn"}},"service":{"type":"LoadBalancer"}}}`),
 		},
 		{
-			name: "Non-empty installed values map, non-empty release values",
-			installedValues: map[string]interface{}{
-				"global": map[string]interface{}{
-					"ironicIP": "147.28.230.5",
-				},
-				"metal3-mariadb": map[string]interface{}{
-					"persistence": map[string]string{
-						"storageClass": "longhorn",
-					},
-				},
-			},
+			name:            "Non-empty installed values map, non-empty release values",
+			installedValues: installedValuesMap,
 			releaseValues: &apiextensionsv1.JSON{
 				Raw: []byte(`{"global": {"ironicIP": "147.28.230.105"}}`),
 			},
-			expectedValues: []byte(`{"global":{"ironicIP":"147.28.230.105"},"metal3-mariadb":{"persistence":{"storageClass":"longhorn"}}}`),
+			expectedValues: []byte(`{"global":{"ironicIP":"147.28.230.105"},"metal3-ironic":{"persistence":{"ironic":{"storageClass":"longhorn"}},"service":{"type":"LoadBalancer"}}}`),
 		},
 		{
-			name: "Non-empty installed values map, non-empty release values, non-empty user values",
-			installedValues: map[string]interface{}{
-				"global": map[string]interface{}{
-					"ironicIP": "147.28.230.5",
-				},
-				"metal3-mariadb": map[string]interface{}{
-					"persistence": map[string]string{
-						"storageClass": "longhorn",
-					},
-				},
-			},
+			name:            "Non-empty installed values map, non-empty release values, non-empty user values",
+			installedValues: installedValuesMap,
 			releaseValues: &apiextensionsv1.JSON{
 				Raw: []byte(`{"global": {"ironicIP": "147.28.230.105"}}`),
 			},
 			userValues: &apiextensionsv1.JSON{
-				Raw: []byte(`{"metal3-ironic": {"persistence": {"ironic": {"storageClass": "longhorn"}}}}`),
+				Raw: []byte(`{"metal3-ironic": {"persistence": {"ironic": {"storageClass": "local-path-provisioner"}}}}`),
 			},
-			expectedValues: []byte(`{"global":{"ironicIP":"147.28.230.105"},"metal3-ironic":{"persistence":{"ironic":{"storageClass":"longhorn"}}},"metal3-mariadb":{"persistence":{"storageClass":"longhorn"}}}`),
+			expectedValues: []byte(`{"global":{"ironicIP":"147.28.230.105"},"metal3-ironic":{"persistence":{"ironic":{"storageClass":"local-path-provisioner"}},"service":{"type":"LoadBalancer"}}}`),
 		},
 		{
 			name:            "Invalid installed values string",
