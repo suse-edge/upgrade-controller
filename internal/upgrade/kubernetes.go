@@ -15,7 +15,8 @@ const (
 )
 
 func kubernetesPlanName(typeKey, version string) string {
-	return fmt.Sprintf("%s-%s", typeKey, strings.ReplaceAll(version, "+", "-"))
+	versionReplacer := strings.NewReplacer(".", "-", "+", "-")
+	return fmt.Sprintf("%s-%s", typeKey, versionReplacer.Replace(version))
 }
 
 func kubernetesUpgradeImage(version string) string {
