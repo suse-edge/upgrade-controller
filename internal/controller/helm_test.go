@@ -9,6 +9,73 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func Test_MergeMaps(t *testing.T) {
+	tests := []struct {
+		name   string
+		m1     map[string]any
+		m2     map[string]any
+		result map[string]any
+	}{
+		{
+			name:   "empty maps",
+			m1:     map[string]any{},
+			m2:     map[string]any{},
+			result: map[string]any{},
+		},
+		{
+			name: "non-empty first map, empty second map",
+			m1: map[string]any{
+				"a": 1,
+			},
+			m2: map[string]any{},
+			result: map[string]any{
+				"a": 1,
+			},
+		},
+		{
+			name: "empty first map, non-empty second map",
+			m1:   map[string]any{},
+			m2: map[string]any{
+				"b": 5,
+			},
+			result: map[string]any{
+				"b": 5,
+			},
+		},
+		{
+			name: "non-empty first map, non-empty second map",
+			m1: map[string]any{
+				"a": map[string]any{
+					"a1": 1,
+					"a2": 5,
+				},
+				"b": "five",
+			},
+			m2: map[string]any{
+				"a": map[string]any{
+					"a1": 100,
+				},
+				"c": 777,
+			},
+			result: map[string]any{
+				"a": map[string]any{
+					"a1": 100,
+					"a2": 5,
+				},
+				"b": "five",
+				"c": 777,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := mergeMaps(test.m1, test.m2)
+			assert.Equal(t, test.result, result)
+		})
+	}
+}
+
 func Test_MergeHelmValues(t *testing.T) {
 	installedValuesStr := `{
   "global": {
