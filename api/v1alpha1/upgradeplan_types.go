@@ -52,7 +52,7 @@ type UpgradePlanSpec struct {
 	ReleaseVersion string `json:"releaseVersion"`
 	// DisableDrain specifies whether control-plane and worker nodes drain should be disabled.
 	// +optional
-	DisableDrain *DisableDrain `json:"disableDrain"`
+	DisableDrain DisableDrain `json:"disableDrain"`
 }
 
 type DisableDrain struct {
