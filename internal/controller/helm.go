@@ -72,7 +72,7 @@ func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan
 	backoffLimit := int32(6)
 
 	var userValues *apiextensionsv1.JSON
-	for _, h := range upgradePlan.Spec.HelmValues {
+	for _, h := range upgradePlan.Spec.Helm {
 		if releaseChart.Name == h.Chart {
 			userValues = h.Values
 			break
@@ -106,7 +106,7 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan
 	backoffLimit := int32(6)
 
 	var userValues *apiextensionsv1.JSON
-	for _, h := range upgradePlan.Spec.HelmValues {
+	for _, h := range upgradePlan.Spec.Helm {
 		if releaseChart.Name == h.Chart {
 			userValues = h.Values
 			break

@@ -54,12 +54,12 @@ type UpgradePlanSpec struct {
 	// DisableDrain specifies whether control-plane and worker nodes drain should be disabled.
 	// +optional
 	DisableDrain DisableDrain `json:"disableDrain"`
-	// HelmValues specifies additional values for components installed via Helm.
+	// Helm specifies additional values for components installed via Helm.
 	// It is only advised to use this field for values that are critical for upgrades.
 	// Standard chart value updates should be performed after
 	// the respective charts have been upgraded to the next version.
 	// +optional
-	HelmValues []HelmValues `json:"helmValues"`
+	Helm []HelmValues `json:"helm"`
 }
 
 type DisableDrain struct {
