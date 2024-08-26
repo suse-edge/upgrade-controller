@@ -201,9 +201,9 @@ func mergeMaps(m1, m2 map[string]any) map[string]any {
 	}
 
 	for k, v := range m2 {
-		if v, ok := v.(map[string]any); ok {
-			if inner, ok := out[k].(map[string]any); ok {
-				out[k] = mergeMaps(inner, v)
+		if inner, ok := v.(map[string]any); ok {
+			if outInner, ok := out[k].(map[string]any); ok {
+				out[k] = mergeMaps(outInner, inner)
 				continue
 			}
 		}
