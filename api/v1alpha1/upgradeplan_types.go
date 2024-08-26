@@ -24,6 +24,8 @@ import (
 )
 
 const (
+	UpgradePlanFinalizer = "upgradeplan.lifecycle.suse.com/finalizer"
+
 	OperatingSystemUpgradedCondition = "OSUpgraded"
 	KubernetesUpgradedCondition      = "KubernetesUpgraded"
 
