@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
@@ -18,6 +19,7 @@ import (
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -69,6 +71,19 @@ func retrieveHelmRelease(name string) (*helmrelease.Release, error) {
 func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, chart *helmcattlev1.HelmChart, releaseChart *lifecyclev1alpha1.HelmChart) error {
 	backoffLimit := int32(6)
 
+	var userValues *apiextensionsv1.JSON
+	for _, h := range upgradePlan.Spec.Helm {
+		if releaseChart.Name == h.Chart {
+			userValues = h.Values
+			break
+		}
+	}
+
+	values, err := mergeHelmValues(chart.Spec.ValuesContent, releaseChart.Values, userValues)
+	if err != nil {
+		return fmt.Errorf("merging chart values: %w", err)
+	}
+
 	if chart.Annotations == nil {
 		chart.Annotations = map[string]string{}
 	}
@@ -79,6 +94,7 @@ func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan
 	chart.Spec.Chart = releaseChart.Name
 	chart.Spec.Version = releaseChart.Version
 	chart.Spec.Repo = releaseChart.Repository
+	chart.Spec.ValuesContent = string(values)
 	chart.Spec.BackOffLimit = &backoffLimit
 
 	return r.Update(ctx, chart)
@@ -88,15 +104,18 @@ func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan
 // using the information from an existing Helm release.
 func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, installedChart *helmrelease.Release, releaseChart *lifecyclev1alpha1.HelmChart) error {
 	backoffLimit := int32(6)
-	var values []byte
 
-	if installedChart.Config != nil {
-		// Use the current configuration values for the chart.
-		var err error
-		values, err = json.Marshal(installedChart.Config)
-		if err != nil {
-			return fmt.Errorf("marshaling chart values: %w", err)
+	var userValues *apiextensionsv1.JSON
+	for _, h := range upgradePlan.Spec.Helm {
+		if releaseChart.Name == h.Chart {
+			userValues = h.Values
+			break
 		}
+	}
+
+	values, err := mergeHelmValues(installedChart.Config, releaseChart.Values, userValues)
+	if err != nil {
+		return fmt.Errorf("merging chart values: %w", err)
 	}
 
 	annotations := upgrade.PlanIdentifierAnnotations(upgradePlan.Name, upgradePlan.Namespace)
@@ -123,6 +142,75 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan
 	}
 
 	return r.createObject(ctx, upgradePlan, chart)
+}
+
+func mergeHelmValues(installedValues any, releaseValues, userValues *apiextensionsv1.JSON) ([]byte, error) {
+	values := map[string]any{}
+
+	switch installed := installedValues.(type) {
+	case string:
+		if installed != "" {
+			if err := json.Unmarshal([]byte(installed), &values); err != nil {
+				return nil, fmt.Errorf("unmarshaling installed chart values: %w", err)
+			}
+		}
+	case map[string]interface{}:
+		if len(installed) != 0 {
+			maps.Copy(values, installed)
+		}
+	default:
+		return nil, fmt.Errorf("unexpected type %T of installed values", installedValues)
+	}
+
+	if releaseValues != nil && len(releaseValues.Raw) > 0 {
+		var v map[string]any
+
+		if err := json.Unmarshal(releaseValues.Raw, &v); err != nil {
+			return nil, fmt.Errorf("unmarshaling additional release values: %w", err)
+		}
+
+		values = mergeMaps(values, v)
+	}
+
+	if userValues != nil && len(userValues.Raw) > 0 {
+		var v map[string]any
+
+		if err := json.Unmarshal(userValues.Raw, &v); err != nil {
+			return nil, fmt.Errorf("unmarshaling additional user values: %w", err)
+		}
+
+		values = mergeMaps(values, v)
+	}
+
+	if len(values) == 0 {
+		return nil, nil
+	}
+
+	v, err := json.Marshal(values)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling chart values: %w", err)
+	}
+
+	return v, nil
+}
+
+func mergeMaps(m1, m2 map[string]any) map[string]any {
+	out := make(map[string]any, len(m1))
+	for k, v := range m1 {
+		out[k] = v
+	}
+
+	for k, v := range m2 {
+		if inner, ok := v.(map[string]any); ok {
+			if outInner, ok := out[k].(map[string]any); ok {
+				out[k] = mergeMaps(outInner, inner)
+				continue
+			}
+		}
+		out[k] = v
+	}
+
+	return out
 }
 
 func (r *UpgradePlanReconciler) upgradeHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, releaseChart *lifecyclev1alpha1.HelmChart) (upgrade.HelmChartState, error) {
