@@ -82,8 +82,19 @@ func (r *UpgradePlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	logger.Info("Reconciling UpgradePlan")
 
 	if !plan.ObjectMeta.DeletionTimestamp.IsZero() {
-		return ctrl.Result{}, r.reconcileDelete(ctx, plan)
-	} else if !controllerutil.ContainsFinalizer(plan, lifecyclev1alpha1.UpgradePlanFinalizer) {
+		if !controllerutil.ContainsFinalizer(plan, lifecyclev1alpha1.UpgradePlanFinalizer) {
+			return ctrl.Result{}, nil
+		}
+
+		if err := r.reconcileDelete(ctx, plan); err != nil {
+			return ctrl.Result{}, err
+		}
+
+		controllerutil.RemoveFinalizer(plan, lifecyclev1alpha1.UpgradePlanFinalizer)
+		return ctrl.Result{}, r.Update(ctx, plan)
+	}
+
+	if !controllerutil.ContainsFinalizer(plan, lifecyclev1alpha1.UpgradePlanFinalizer) {
 		controllerutil.AddFinalizer(plan, lifecyclev1alpha1.UpgradePlanFinalizer)
 		return ctrl.Result{}, r.Update(ctx, plan)
 	}
@@ -95,10 +106,6 @@ func (r *UpgradePlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 }
 
 func (r *UpgradePlanReconciler) reconcileDelete(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) error {
-	if !controllerutil.ContainsFinalizer(upgradePlan, lifecyclev1alpha1.UpgradePlanFinalizer) {
-		return nil
-	}
-
 	sucPlans := &upgradecattlev1.PlanList{}
 
 	if err := r.List(ctx, sucPlans, &client.ListOptions{
@@ -142,8 +149,7 @@ func (r *UpgradePlanReconciler) reconcileDelete(ctx context.Context, upgradePlan
 		}
 	}
 
-	controllerutil.RemoveFinalizer(upgradePlan, lifecyclev1alpha1.UpgradePlanFinalizer)
-	return r.Update(ctx, upgradePlan)
+	return nil
 }
 
 func (r *UpgradePlanReconciler) reconcileNormal(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) (ctrl.Result, error) {
@@ -359,6 +365,9 @@ func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return len(e.ObjectNew.(*upgradecattlev1.Plan).Status.Applying) == 0 &&
 					len(e.ObjectOld.(*upgradecattlev1.Plan).Status.Applying) != 0
 			},
+			DeleteFunc: func(e event.DeleteEvent) bool {
+				return false
+			},
 		})).
 		Watches(&batchv1.Job{}, handler.EnqueueRequestsFromMapFunc(r.findUpgradePlanFromJob), builder.WithPredicates(predicate.Funcs{
 			CreateFunc: func(e event.CreateEvent) bool {
@@ -383,6 +392,10 @@ func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return false
 			},
 		})).
-		Watches(&corev1.Secret{}, handler.EnqueueRequestsFromMapFunc(r.findUpgradePlanFromAnnotations)).
+		Watches(&corev1.Secret{}, handler.EnqueueRequestsFromMapFunc(r.findUpgradePlanFromAnnotations), builder.WithPredicates(predicate.Funcs{
+			DeleteFunc: func(e event.DeleteEvent) bool {
+				return false
+			},
+		})).
 		Complete(r)
 }
