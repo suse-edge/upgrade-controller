@@ -46,6 +46,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
+var errUpgradeInProgress = errors.New("upgrade is currently in progress")
+
 // UpgradePlanReconciler reconciles a UpgradePlan object
 type UpgradePlanReconciler struct {
 	client.Client
@@ -87,6 +89,11 @@ func (r *UpgradePlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 
 		if err := r.reconcileDelete(ctx, plan); err != nil {
+			if errors.Is(err, errUpgradeInProgress) {
+				// Requeue here is not necessary since the plan
+				// will be reconciled again once the upgrade is complete.
+				return ctrl.Result{}, nil
+			}
 			return ctrl.Result{}, err
 		}
 
@@ -121,8 +128,7 @@ func (r *UpgradePlanReconciler) reconcileDelete(ctx context.Context, upgradePlan
 		}
 
 		if len(plan.Status.Applying) != 0 {
-			// Wait for the upgrade to be completed.
-			return nil
+			return errUpgradeInProgress
 		}
 
 		if err := r.Delete(ctx, &plan); err != nil {
