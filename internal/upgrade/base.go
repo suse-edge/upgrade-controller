@@ -1,6 +1,9 @@
 package upgrade
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
 	"time"
 
 	upgradecattlev1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
@@ -19,6 +22,8 @@ const (
 
 	controlPlaneKey = "control-plane"
 	workersKey      = "workers"
+
+	randomByteNum = 8
 )
 
 func PlanIdentifierAnnotations(name, namespace string) map[string]string {
@@ -26,6 +31,14 @@ func PlanIdentifierAnnotations(name, namespace string) map[string]string {
 		PlanNameAnnotation:      name,
 		PlanNamespaceAnnotation: namespace,
 	}
+}
+
+func GenerateSuffix() (string, error) {
+	bytes := make([]byte, randomByteNum)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", fmt.Errorf("generating random bytes: %w", err)
+	}
+	return hex.EncodeToString(bytes), nil
 }
 
 func baseUpgradePlan(name string, drain bool, annotations map[string]string) *upgradecattlev1.Plan {
