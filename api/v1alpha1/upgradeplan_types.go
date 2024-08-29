@@ -84,6 +84,9 @@ type UpgradePlanStatus struct {
 	// +patchMergeKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+
+	// SUCNameSuffix is the suffix added to all reasorses created for SUC.
+	SUCNameSuffix string `json:"sucNameSuffix,omitempty"`
 }
 
 // +kubebuilder:object:root=true
