@@ -10,7 +10,7 @@ require (
 	github.com/onsi/gomega v1.34.1
 	github.com/rancher/system-upgrade-controller/pkg/apis v0.0.0-20240612205712-57605e3390c0
 	github.com/stretchr/testify v1.9.0
-	helm.sh/helm/v3 v3.15.3
+	helm.sh/helm/v3 v3.15.4
 	k8s.io/api v0.31.0
 	k8s.io/apiextensions-apiserver v0.31.0
 	k8s.io/apimachinery v0.31.0
