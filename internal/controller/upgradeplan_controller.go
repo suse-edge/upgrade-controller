@@ -38,12 +38,15 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
+
+var errUpgradeInProgress = errors.New("upgrade is currently in progress")
 
 // UpgradePlanReconciler reconciles a UpgradePlan object
 type UpgradePlanReconciler struct {
@@ -57,7 +60,7 @@ type UpgradePlanReconciler struct {
 // +kubebuilder:rbac:groups=lifecycle.suse.com,resources=upgradeplans,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=lifecycle.suse.com,resources=upgradeplans/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=lifecycle.suse.com,resources=upgradeplans/finalizers,verbs=update
-// +kubebuilder:rbac:groups=upgrade.cattle.io,resources=plans,verbs=create;list;get;watch
+// +kubebuilder:rbac:groups=upgrade.cattle.io,resources=plans,verbs=create;list;get;watch;delete
 // +kubebuilder:rbac:groups="",resources=nodes,verbs=watch;list
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;delete;create;watch
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
@@ -80,13 +83,82 @@ func (r *UpgradePlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling UpgradePlan")
 
-	result, err := r.executePlan(ctx, plan)
+	if !plan.ObjectMeta.DeletionTimestamp.IsZero() {
+		if !controllerutil.ContainsFinalizer(plan, lifecyclev1alpha1.UpgradePlanFinalizer) {
+			return ctrl.Result{}, nil
+		}
+
+		if err := r.reconcileDelete(ctx, plan); err != nil {
+			if errors.Is(err, errUpgradeInProgress) {
+				// Requeue here is not necessary since the plan
+				// will be reconciled again once the upgrade is complete.
+				return ctrl.Result{}, nil
+			}
+			return ctrl.Result{}, err
+		}
+
+		controllerutil.RemoveFinalizer(plan, lifecyclev1alpha1.UpgradePlanFinalizer)
+		return ctrl.Result{}, r.Update(ctx, plan)
+	}
+
+	if !controllerutil.ContainsFinalizer(plan, lifecyclev1alpha1.UpgradePlanFinalizer) {
+		controllerutil.AddFinalizer(plan, lifecyclev1alpha1.UpgradePlanFinalizer)
+		return ctrl.Result{}, r.Update(ctx, plan)
+	}
+
+	result, err := r.reconcileNormal(ctx, plan)
 
 	// Attempt to update the plan status before returning.
 	return result, errors.Join(err, r.Status().Update(ctx, plan))
 }
 
-func (r *UpgradePlanReconciler) executePlan(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) (ctrl.Result, error) {
+func (r *UpgradePlanReconciler) reconcileDelete(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) error {
+	sucPlans := &upgradecattlev1.PlanList{}
+
+	if err := r.List(ctx, sucPlans, &client.ListOptions{
+		Namespace: upgrade.SUCNamespace,
+	}); err != nil {
+		return fmt.Errorf("retrieving SUC plans: %w", err)
+	}
+
+	for _, plan := range sucPlans.Items {
+		if plan.Annotations[upgrade.PlanNameAnnotation] != upgradePlan.Name ||
+			plan.Annotations[upgrade.PlanNamespaceAnnotation] != upgradePlan.Namespace {
+			continue
+		}
+
+		if len(plan.Status.Applying) != 0 {
+			return errUpgradeInProgress
+		}
+
+		if err := r.Delete(ctx, &plan); err != nil {
+			return fmt.Errorf("deleting SUC plan %s: %w", plan.Name, err)
+		}
+	}
+
+	secrets := &corev1.SecretList{}
+
+	if err := r.List(ctx, secrets, &client.ListOptions{
+		Namespace: upgrade.SUCNamespace,
+	}); err != nil {
+		return fmt.Errorf("retrieving SUC secrets: %w", err)
+	}
+
+	for _, secret := range secrets.Items {
+		if secret.Annotations[upgrade.PlanNameAnnotation] != upgradePlan.Name ||
+			secret.Annotations[upgrade.PlanNamespaceAnnotation] != upgradePlan.Namespace {
+			continue
+		}
+
+		if err := r.Delete(ctx, &secret); err != nil {
+			return fmt.Errorf("deleting SUC secret %s: %w", secret.Name, err)
+		}
+	}
+
+	return nil
+}
+
+func (r *UpgradePlanReconciler) reconcileNormal(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) (ctrl.Result, error) {
 	release, err := r.retrieveReleaseManifest(ctx, upgradePlan)
 	if err != nil {
 		if !errors.Is(err, errReleaseManifestNotFound) {
@@ -299,6 +371,9 @@ func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return len(e.ObjectNew.(*upgradecattlev1.Plan).Status.Applying) == 0 &&
 					len(e.ObjectOld.(*upgradecattlev1.Plan).Status.Applying) != 0
 			},
+			DeleteFunc: func(e event.DeleteEvent) bool {
+				return false
+			},
 		})).
 		Watches(&batchv1.Job{}, handler.EnqueueRequestsFromMapFunc(r.findUpgradePlanFromJob), builder.WithPredicates(predicate.Funcs{
 			CreateFunc: func(e event.CreateEvent) bool {
@@ -323,6 +398,10 @@ func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return false
 			},
 		})).
-		Watches(&corev1.Secret{}, handler.EnqueueRequestsFromMapFunc(r.findUpgradePlanFromAnnotations)).
+		Watches(&corev1.Secret{}, handler.EnqueueRequestsFromMapFunc(r.findUpgradePlanFromAnnotations), builder.WithPredicates(predicate.Funcs{
+			DeleteFunc: func(e event.DeleteEvent) bool {
+				return false
+			},
+		})).
 		Complete(r)
 }
