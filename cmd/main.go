@@ -37,6 +37,7 @@ import (
 
 	helmcattlev1 "github.com/k3s-io/helm-controller/pkg/apis/helm.cattle.io/v1"
 	upgradecattlev1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
+
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 	"github.com/suse-edge/upgrade-controller/internal/controller"
 	"github.com/suse-edge/upgrade-controller/internal/upgrade"
@@ -167,6 +168,12 @@ func main() {
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "UpgradePlan")
 		os.Exit(1)
+	}
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err = (&lifecyclev1alpha1.UpgradePlan{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "UpgradePlan")
+			os.Exit(1)
+		}
 	}
 	// +kubebuilder:scaffold:builder
 

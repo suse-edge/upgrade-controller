@@ -150,13 +150,13 @@ spec:
                 x-kubernetes-list-type: map
               observedGeneration:
                 description: ObservedGeneration is the currently tracked generation
-                  of the UpgradePlan
+                  of the UpgradePlan. Meant for internal use only.
                 format: int64
                 type: integer
               sucNameSuffix:
                 description: |-
                   SUCNameSuffix is the suffix added to all resources created for SUC. Meant for internal use only.
-                  Changes for each new ObservedGeneration.
+                  Changes for each new ObservedGeneration
                 type: string
             type: object
         type: object
