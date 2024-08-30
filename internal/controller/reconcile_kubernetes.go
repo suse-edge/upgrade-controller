@@ -17,6 +17,8 @@ import (
 )
 
 func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, kubernetes *lifecyclev1alpha1.Kubernetes) (ctrl.Result, error) {
+	nameSuffix := upgradePlan.Status.SUCNameSuffix
+
 	nodeList := &corev1.NodeList{}
 	if err := r.List(ctx, nodeList); err != nil {
 		return ctrl.Result{}, fmt.Errorf("listing nodes: %w", err)
@@ -29,7 +31,7 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgrade
 
 	identifierAnnotations := upgrade.PlanIdentifierAnnotations(upgradePlan.Name, upgradePlan.Namespace)
 	drainControlPlane, drainWorker := parseDrainOptions(nodeList, upgradePlan)
-	controlPlanePlan := upgrade.KubernetesControlPlanePlan(kubernetesVersion, drainControlPlane, identifierAnnotations)
+	controlPlanePlan := upgrade.KubernetesControlPlanePlan(nameSuffix, kubernetesVersion, drainControlPlane, identifierAnnotations)
 	if err = r.Get(ctx, client.ObjectKeyFromObject(controlPlanePlan), controlPlanePlan); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
@@ -52,7 +54,7 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgrade
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	workerPlan := upgrade.KubernetesWorkerPlan(kubernetesVersion, drainWorker, identifierAnnotations)
+	workerPlan := upgrade.KubernetesWorkerPlan(nameSuffix, kubernetesVersion, drainWorker, identifierAnnotations)
 	if err = r.Get(ctx, client.ObjectKeyFromObject(workerPlan), workerPlan); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err

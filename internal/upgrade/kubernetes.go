@@ -14,9 +14,9 @@ const (
 	k3sUpgradeImage  = "rancher/k3s-upgrade"
 )
 
-func kubernetesPlanName(typeKey, version string) string {
+func kubernetesPlanName(typeKey, version, suffix string) string {
 	versionReplacer := strings.NewReplacer(".", "-", "+", "-")
-	return fmt.Sprintf("%s-%s", typeKey, versionReplacer.Replace(version))
+	return fmt.Sprintf("%s-%s-%s", typeKey, versionReplacer.Replace(version), suffix)
 }
 
 func kubernetesUpgradeImage(version string) string {
@@ -27,8 +27,8 @@ func kubernetesUpgradeImage(version string) string {
 	return rke2UpgradeImage
 }
 
-func KubernetesControlPlanePlan(version string, drain bool, annotations map[string]string) *upgradecattlev1.Plan {
-	controlPlanePlanName := kubernetesPlanName(controlPlaneKey, version)
+func KubernetesControlPlanePlan(nameSuffix, version string, drain bool, annotations map[string]string) *upgradecattlev1.Plan {
+	controlPlanePlanName := kubernetesPlanName(controlPlaneKey, version, nameSuffix)
 	upgradeImage := kubernetesUpgradeImage(version)
 
 	controlPlanePlan := baseUpgradePlan(controlPlanePlanName, drain, annotations)
@@ -76,9 +76,9 @@ func KubernetesControlPlanePlan(version string, drain bool, annotations map[stri
 	return controlPlanePlan
 }
 
-func KubernetesWorkerPlan(version string, drain bool, annotations map[string]string) *upgradecattlev1.Plan {
-	controlPlanePlanName := kubernetesPlanName(controlPlaneKey, version)
-	workerPlanName := kubernetesPlanName(workersKey, version)
+func KubernetesWorkerPlan(nameSuffix, version string, drain bool, annotations map[string]string) *upgradecattlev1.Plan {
+	controlPlanePlanName := kubernetesPlanName(controlPlaneKey, version, nameSuffix)
+	workerPlanName := kubernetesPlanName(workersKey, version, nameSuffix)
 	upgradeImage := kubernetesUpgradeImage(version)
 
 	workerPlan := baseUpgradePlan(workerPlanName, drain, annotations)

@@ -23,7 +23,8 @@ const (
 	controlPlaneKey = "control-plane"
 	workersKey      = "workers"
 
-	randomByteNum = 8
+	// 5 random bytes = 10 random hexadecimal characters
+	randomByteNum = 5
 )
 
 func PlanIdentifierAnnotations(name, namespace string) map[string]string {

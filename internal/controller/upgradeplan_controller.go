@@ -169,6 +169,19 @@ func (r *UpgradePlanReconciler) reconcileNormal(ctx context.Context, upgradePlan
 	}
 
 	if len(upgradePlan.Status.Conditions) == 0 {
+		suffix, err := upgrade.GenerateSuffix()
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("generating suffix: %w", err)
+		}
+
+		// validate that the generated suffix is not the same
+		// as the current suffix
+		if suffix == upgradePlan.Status.SUCNameSuffix {
+			return ctrl.Result{Requeue: true}, nil
+		}
+
+		upgradePlan.Status.SUCNameSuffix = suffix
+
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, upgradePendingMessage("OS"))
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, upgradePendingMessage("Kubernetes"))
 
