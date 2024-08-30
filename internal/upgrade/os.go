@@ -22,11 +22,10 @@ const (
 //go:embed templates/os-upgrade.sh.tpl
 var osUpgradeScript string
 
-func OSUpgradeSecret(releaseOS *lifecyclev1alpha1.OperatingSystem, annotations map[string]string) (*corev1.Secret, error) {
+func OSUpgradeSecret(nameSuffix string, releaseOS *lifecyclev1alpha1.OperatingSystem, annotations map[string]string) (*corev1.Secret, error) {
 	const (
 		apiVersion = "v1"
 		kind       = "Secret"
-		secretName = "os-upgrade-secret"
 	)
 
 	tmpl, err := template.New(scriptName).Parse(osUpgradeScript)
@@ -51,6 +50,7 @@ func OSUpgradeSecret(releaseOS *lifecyclev1alpha1.OperatingSystem, annotations m
 		return nil, fmt.Errorf("applying template: %w", err)
 	}
 
+	secretName := osSecretName(releaseOS.ZypperID, releaseOS.Version, nameSuffix)
 	secret := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       kind,
@@ -70,8 +70,8 @@ func OSUpgradeSecret(releaseOS *lifecyclev1alpha1.OperatingSystem, annotations m
 	return secret, nil
 }
 
-func OSControlPlanePlan(releaseVersion, secretName string, releaseOS *lifecyclev1alpha1.OperatingSystem, drain bool, annotations map[string]string) *upgradecattlev1.Plan {
-	controlPlanePlanName := osPlanName(controlPlaneKey, releaseOS.ZypperID, releaseOS.Version)
+func OSControlPlanePlan(nameSuffix, releaseVersion, secretName string, releaseOS *lifecyclev1alpha1.OperatingSystem, drain bool, annotations map[string]string) *upgradecattlev1.Plan {
+	controlPlanePlanName := osPlanName(controlPlaneKey, releaseOS.ZypperID, releaseOS.Version, nameSuffix)
 	controlPlanePlan := baseOSPlan(controlPlanePlanName, releaseVersion, secretName, drain, annotations)
 
 	controlPlanePlan.Labels = map[string]string{
@@ -113,8 +113,8 @@ func OSControlPlanePlan(releaseVersion, secretName string, releaseOS *lifecyclev
 	return controlPlanePlan
 }
 
-func OSWorkerPlan(releaseVersion, secretName string, releaseOS *lifecyclev1alpha1.OperatingSystem, drain bool, annotations map[string]string) *upgradecattlev1.Plan {
-	workerPlanName := osPlanName(workersKey, releaseOS.ZypperID, releaseOS.Version)
+func OSWorkerPlan(nameSuffix, releaseVersion, secretName string, releaseOS *lifecyclev1alpha1.OperatingSystem, drain bool, annotations map[string]string) *upgradecattlev1.Plan {
+	workerPlanName := osPlanName(workersKey, releaseOS.ZypperID, releaseOS.Version, nameSuffix)
 	workerPlan := baseOSPlan(workerPlanName, releaseVersion, secretName, drain, annotations)
 
 	workerPlan.Labels = map[string]string{
@@ -165,6 +165,10 @@ func baseOSPlan(planName, releaseVersion, secretName string, drain bool, annotat
 	return baseOSplan
 }
 
-func osPlanName(typeKey, osName, osVersion string) string {
-	return fmt.Sprintf("%s-%s-%s", typeKey, strings.ToLower(osName), strings.ReplaceAll(osVersion, ".", "-"))
+func osPlanName(typeKey, osName, osVersion, suffix string) string {
+	return fmt.Sprintf("%s-%s-%s-%s", typeKey, strings.ToLower(osName), strings.ReplaceAll(osVersion, ".", "-"), suffix)
+}
+
+func osSecretName(osName, osVersion, suffix string) string {
+	return fmt.Sprintf("os-upgrade-secret-%s-%s-%s", strings.ToLower(osName), strings.ReplaceAll(osVersion, ".", "-"), suffix)
 }
