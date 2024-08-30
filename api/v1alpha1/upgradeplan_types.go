@@ -85,7 +85,7 @@ type UpgradePlanStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
-	// SUCNameSuffix is the suffix added to all reasorses created for SUC.
+	// SUCNameSuffix is the suffix added to all resources created for SUC. Meant for internal use only.
 	SUCNameSuffix string `json:"sucNameSuffix,omitempty"`
 }
 
