@@ -17,7 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/version"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -49,6 +52,50 @@ func (r *UpgradePlan) ValidateCreate() (admission.Warnings, error) {
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (r *UpgradePlan) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 	upgradeplanlog.Info("validate update", "name", r.Name)
+
+	oldPlan, ok := old.(*UpgradePlan)
+	if !ok {
+		return nil, fmt.Errorf("unexpected object type: %T", old)
+	}
+
+	// deletion is scheduled, but not yet finished and controller has updated the plan
+	// with the removed finalizers
+	if !r.ObjectMeta.DeletionTimestamp.IsZero() && len(r.Finalizers) < len(oldPlan.Finalizers) {
+		return nil, nil
+	}
+
+	if oldPlan.Status.LastSuccessfulReleaseVersion != "" {
+		newReleaseVersion, err := version.ParseSemantic(r.Spec.ReleaseVersion)
+		if err != nil {
+			return nil, fmt.Errorf("'%s' is not a semantic version", r.Spec.ReleaseVersion)
+		}
+
+		indicator, err := newReleaseVersion.Compare(oldPlan.Status.LastSuccessfulReleaseVersion)
+		if err != nil {
+			return nil, fmt.Errorf("comparing versions: %w", err)
+		}
+
+		switch indicator {
+		case 0:
+			return nil, fmt.Errorf("any edits over '%s' must come with an increment of the releaseVersion", r.Name)
+		case -1:
+			return nil, fmt.Errorf("new releaseVersion '%s' must be greater than the currently applied '%s' releaseVersion", r.Spec.ReleaseVersion, oldPlan.Status.LastSuccessfulReleaseVersion)
+		}
+	}
+
+	for _, condition := range r.Status.Conditions {
+		// Block edit if an upgrade process is currently running
+		switch condition.Reason {
+		case UpgradeInProgress:
+			return nil, fmt.Errorf("detected 'InProgress' condition in upgrade plan condition list, cannot apply edit. Condition: %s", condition.Type)
+		case UpgradePending:
+			return nil, fmt.Errorf("detected 'Pending' condition in upgrade plan condition list, cannot apply edit. Condition: %s", condition.Type)
+		case UpgradeError:
+			// Transient error during component execution
+			return nil, fmt.Errorf("detected plan with 'Error' condition, cannot apply edit. Condition:  %s", condition.Type)
+		}
+	}
+
 	return nil, nil
 }
 
