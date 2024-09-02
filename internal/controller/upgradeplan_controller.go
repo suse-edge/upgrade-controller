@@ -211,6 +211,7 @@ func (r *UpgradePlanReconciler) reconcileNormal(ctx context.Context, upgradePlan
 	logger := log.FromContext(ctx)
 	logger.Info("Upgrade completed")
 
+	upgradePlan.Status.LastSuccessfulReleaseVersion = release.Spec.ReleaseVersion
 	return ctrl.Result{}, nil
 }
 
