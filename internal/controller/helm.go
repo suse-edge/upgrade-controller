@@ -11,6 +11,8 @@ import (
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 	"github.com/suse-edge/upgrade-controller/internal/upgrade"
 
+	"gopkg.in/yaml.v3"
+
 	helmcattlev1 "github.com/k3s-io/helm-controller/pkg/apis/helm.cattle.io/v1"
 	helmrelease "helm.sh/helm/v3/pkg/release"
 	helmutil "helm.sh/helm/v3/pkg/releaseutil"
@@ -150,7 +152,7 @@ func mergeHelmValues(installedValues any, releaseValues, userValues *apiextensio
 	switch installed := installedValues.(type) {
 	case string:
 		if installed != "" {
-			if err := json.Unmarshal([]byte(installed), &values); err != nil {
+			if err := yaml.Unmarshal([]byte(installed), &values); err != nil {
 				return nil, fmt.Errorf("unmarshaling installed chart values: %w", err)
 			}
 		}
@@ -186,7 +188,7 @@ func mergeHelmValues(installedValues any, releaseValues, userValues *apiextensio
 		return nil, nil
 	}
 
-	v, err := json.Marshal(values)
+	v, err := yaml.Marshal(values)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling chart values: %w", err)
 	}
