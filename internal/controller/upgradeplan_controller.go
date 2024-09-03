@@ -103,7 +103,9 @@ func (r *UpgradePlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	if !controllerutil.ContainsFinalizer(plan, lifecyclev1alpha1.UpgradePlanFinalizer) {
 		controllerutil.AddFinalizer(plan, lifecyclev1alpha1.UpgradePlanFinalizer)
-		return ctrl.Result{}, r.Update(ctx, plan)
+
+		// add the finalizers and force a reconciliation
+		return ctrl.Result{Requeue: true}, r.Update(ctx, plan)
 	}
 
 	result, err := r.reconcileNormal(ctx, plan)
