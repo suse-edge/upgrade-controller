@@ -34,7 +34,10 @@ func (r *UpgradePlanReconciler) retrieveReleaseManifest(ctx context.Context, upg
 
 func (r *UpgradePlanReconciler) createReleaseManifest(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) error {
 	annotations := upgrade.PlanIdentifierAnnotations(upgradePlan.Name, upgradePlan.Namespace)
-	job := upgrade.ReleaseManifestInstallJob(r.ReleaseManifestImage, upgradePlan.Spec.ReleaseVersion, r.ServiceAccount, upgradePlan.Namespace, annotations)
+	job, err := upgrade.ReleaseManifestInstallJob(r.ReleaseManifestImage, upgradePlan.Spec.ReleaseVersion, r.ServiceAccount, upgradePlan.Namespace, annotations)
+	if err != nil {
+		return err
+	}
 
 	// Retry the creation since a previously failed job could be in the process of deletion due to TTL
 	return retry.OnError(wait.Backoff{Steps: 5, Duration: 500 * time.Millisecond},

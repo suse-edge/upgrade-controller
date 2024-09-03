@@ -9,7 +9,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ReleaseManifestInstallJob(image, version, serviceAccount, namespace string, annotations map[string]string) *batchv1.Job {
+func ReleaseManifestInstallJob(image, version, serviceAccount, namespace string, annotations map[string]string) (*batchv1.Job, error) {
+	if image == "" {
+		return nil, fmt.Errorf("release manifest image is empty")
+	} else if version == "" {
+		return nil, fmt.Errorf("release manifest version is empty")
+	}
+
 	version = strings.TrimPrefix(version, "v")
 	workloadName := fmt.Sprintf("apply-release-manifest-%s", strings.ReplaceAll(version, ".", "-"))
 	image = fmt.Sprintf("%s:%s", image, version)
@@ -45,5 +51,5 @@ func ReleaseManifestInstallJob(image, version, serviceAccount, namespace string,
 			},
 			TTLSecondsAfterFinished: &ttl,
 		},
-	}
+	}, nil
 }
