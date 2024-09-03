@@ -267,14 +267,16 @@ func parseDrainOptions(nodeList *corev1.NodeList, plan *lifecyclev1alpha1.Upgrad
 		drainWorker = true
 	}
 
-	// If user has explicitly disabled control-plane drains
-	if plan.Spec.DisableDrain.ControlPlane {
-		drainControlPlane = false
-	}
+	if plan.Spec.DisableDrain != nil {
+		// If user has explicitly disabled control-plane drains
+		if plan.Spec.DisableDrain.ControlPlane {
+			drainControlPlane = false
+		}
 
-	// If user has explicitly disabled worker drains
-	if plan.Spec.DisableDrain.Worker {
-		drainWorker = false
+		// If user has explicitly disabled worker drains
+		if plan.Spec.DisableDrain.Worker {
+			drainWorker = false
+		}
 	}
 
 	return drainControlPlane, drainWorker
