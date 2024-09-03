@@ -150,7 +150,7 @@ spec:
                 x-kubernetes-list-type: map
               lastSuccessfulReleaseVersion:
                 description: LastSuccessfulReleaseVersion is the last release version
-                  that this UpgradePlan has successfuly upgraded to
+                  that this UpgradePlan has successfully upgraded to
                 type: string
               observedGeneration:
                 description: ObservedGeneration is the currently tracked generation

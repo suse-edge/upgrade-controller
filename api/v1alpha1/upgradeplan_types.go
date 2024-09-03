@@ -92,7 +92,7 @@ type UpgradePlanStatus struct {
 	// Changes for each new ObservedGeneration
 	SUCNameSuffix string `json:"sucNameSuffix,omitempty"`
 
-	// LastSuccessfulReleaseVersion is the last release version that this UpgradePlan has successfuly upgraded to
+	// LastSuccessfulReleaseVersion is the last release version that this UpgradePlan has successfully upgraded to
 	LastSuccessfulReleaseVersion string `json:"lastSuccessfulReleaseVersion,omitempty"`
 }
 
