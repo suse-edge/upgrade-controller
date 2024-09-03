@@ -17,6 +17,16 @@ func TestPlanIdentifierAnnotations(t *testing.T) {
 	assert.Equal(t, "upgrade-controller-system", annotations["lifecycle.suse.com/upgrade-plan-namespace"])
 }
 
+func TestGenerateSuffix(t *testing.T) {
+	suffix1, err := GenerateSuffix()
+	require.NoError(t, err)
+
+	suffix2, err := GenerateSuffix()
+	require.NoError(t, err)
+
+	assert.NotEqual(t, suffix1, suffix2)
+}
+
 func TestBaseUpgradePlan_DrainEnabled(t *testing.T) {
 	upgradePlan := baseUpgradePlan("upgrade-plan-1", false, nil)
 
