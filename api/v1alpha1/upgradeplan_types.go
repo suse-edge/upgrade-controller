@@ -55,7 +55,7 @@ type UpgradePlanSpec struct {
 	ReleaseVersion string `json:"releaseVersion"`
 	// DisableDrain specifies whether control-plane and worker nodes drain should be disabled.
 	// +optional
-	DisableDrain DisableDrain `json:"disableDrain"`
+	DisableDrain *DisableDrain `json:"disableDrain"`
 	// Helm specifies additional values for components installed via Helm.
 	// It is only advised to use this field for values that are critical for upgrades.
 	// Standard chart value updates should be performed after

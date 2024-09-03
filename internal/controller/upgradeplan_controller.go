@@ -103,7 +103,9 @@ func (r *UpgradePlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	if !controllerutil.ContainsFinalizer(plan, lifecyclev1alpha1.UpgradePlanFinalizer) {
 		controllerutil.AddFinalizer(plan, lifecyclev1alpha1.UpgradePlanFinalizer)
-		return ctrl.Result{}, r.Update(ctx, plan)
+
+		// add the finalizers and force a reconciliation
+		return ctrl.Result{Requeue: true}, r.Update(ctx, plan)
 	}
 
 	result, err := r.reconcileNormal(ctx, plan)
@@ -267,14 +269,16 @@ func parseDrainOptions(nodeList *corev1.NodeList, plan *lifecyclev1alpha1.Upgrad
 		drainWorker = true
 	}
 
-	// If user has explicitly disabled control-plane drains
-	if plan.Spec.DisableDrain.ControlPlane {
-		drainControlPlane = false
-	}
+	if plan.Spec.DisableDrain != nil {
+		// If user has explicitly disabled control-plane drains
+		if plan.Spec.DisableDrain.ControlPlane {
+			drainControlPlane = false
+		}
 
-	// If user has explicitly disabled worker drains
-	if plan.Spec.DisableDrain.Worker {
-		drainWorker = false
+		// If user has explicitly disabled worker drains
+		if plan.Spec.DisableDrain.Worker {
+			drainWorker = false
+		}
 	}
 
 	return drainControlPlane, drainWorker
