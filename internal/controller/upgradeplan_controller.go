@@ -170,7 +170,7 @@ func (r *UpgradePlanReconciler) reconcileNormal(ctx context.Context, upgradePlan
 		return ctrl.Result{}, r.createReleaseManifest(ctx, upgradePlan)
 	}
 
-	if len(upgradePlan.Status.Conditions) == 0 {
+	if upgradePlan.Status.ObservedGeneration != upgradePlan.Generation {
 		suffix, err := upgrade.GenerateSuffix()
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("generating suffix: %w", err)
@@ -183,6 +183,7 @@ func (r *UpgradePlanReconciler) reconcileNormal(ctx context.Context, upgradePlan
 		}
 
 		upgradePlan.Status.SUCNameSuffix = suffix
+		upgradePlan.Status.ObservedGeneration = upgradePlan.Generation
 
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, upgradePendingMessage("OS"))
 		setPendingCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, upgradePendingMessage("Kubernetes"))
@@ -210,6 +211,7 @@ func (r *UpgradePlanReconciler) reconcileNormal(ctx context.Context, upgradePlan
 	logger := log.FromContext(ctx)
 	logger.Info("Upgrade completed")
 
+	upgradePlan.Status.LastSuccessfulReleaseVersion = release.Spec.ReleaseVersion
 	return ctrl.Result{}, nil
 }
 

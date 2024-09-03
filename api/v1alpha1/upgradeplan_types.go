@@ -85,8 +85,15 @@ type UpgradePlanStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
+	// ObservedGeneration is the currently tracked generation of the UpgradePlan. Meant for internal use only.
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
 	// SUCNameSuffix is the suffix added to all resources created for SUC. Meant for internal use only.
+	// Changes for each new ObservedGeneration.
 	SUCNameSuffix string `json:"sucNameSuffix,omitempty"`
+
+	// LastSuccessfulReleaseVersion is the last release version that this UpgradePlan has successfully upgraded to.
+	LastSuccessfulReleaseVersion string `json:"lastSuccessfulReleaseVersion,omitempty"`
 }
 
 // +kubebuilder:object:root=true
