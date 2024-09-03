@@ -161,13 +161,17 @@ func TestKubernetesWorkerPlan_RKE2(t *testing.T) {
 	assert.EqualValues(t, "NotIn", matchExpression.Operator)
 	assert.Equal(t, []string{"true"}, matchExpression.Values)
 
-	require.NotNil(t, upgradePlan.Spec.Prepare)
-	assert.Equal(t, "rancher/rke2-upgrade", upgradePlan.Spec.Prepare.Image)
-	assert.Equal(t, []string{"prepare", "control-plane-v1-30-2-rke2r1-abcdef"}, upgradePlan.Spec.Prepare.Args)
+	prepareContainer := upgradePlan.Spec.Prepare
+	require.NotNil(t, prepareContainer)
+	assert.Equal(t, "rancher/rke2-upgrade", prepareContainer.Image)
+	assert.Empty(t, prepareContainer.Command)
+	assert.Equal(t, []string{"prepare", "control-plane-v1-30-2-rke2r1-abcdef"}, prepareContainer.Args)
 
-	require.NotNil(t, upgradePlan.Spec.Upgrade)
-	assert.Equal(t, "rancher/rke2-upgrade", upgradePlan.Spec.Upgrade.Image)
-	assert.Nil(t, upgradePlan.Spec.Upgrade.Args)
+	upgradeContainer := upgradePlan.Spec.Upgrade
+	require.NotNil(t, upgradeContainer)
+	assert.Equal(t, "rancher/rke2-upgrade", upgradeContainer.Image)
+	assert.Empty(t, upgradeContainer.Command)
+	assert.Empty(t, upgradeContainer.Args)
 
 	assert.Equal(t, version, upgradePlan.Spec.Version)
 	assert.EqualValues(t, 2, upgradePlan.Spec.Concurrency)
@@ -206,13 +210,17 @@ func TestKubernetesWorkerPlan_K3s(t *testing.T) {
 	assert.EqualValues(t, "NotIn", matchExpression.Operator)
 	assert.Equal(t, []string{"true"}, matchExpression.Values)
 
-	require.NotNil(t, upgradePlan.Spec.Prepare)
-	assert.Equal(t, "rancher/k3s-upgrade", upgradePlan.Spec.Prepare.Image)
-	assert.Equal(t, []string{"prepare", "control-plane-v1-30-2-k3s1-abcdef"}, upgradePlan.Spec.Prepare.Args)
+	prepareContainer := upgradePlan.Spec.Prepare
+	require.NotNil(t, prepareContainer)
+	assert.Equal(t, "rancher/k3s-upgrade", prepareContainer.Image)
+	assert.Empty(t, prepareContainer.Command)
+	assert.Equal(t, []string{"prepare", "control-plane-v1-30-2-k3s1-abcdef"}, prepareContainer.Args)
 
-	require.NotNil(t, upgradePlan.Spec.Upgrade)
-	assert.Equal(t, "rancher/k3s-upgrade", upgradePlan.Spec.Upgrade.Image)
-	assert.Nil(t, upgradePlan.Spec.Upgrade.Args)
+	upgradeContainer := upgradePlan.Spec.Upgrade
+	require.NotNil(t, upgradeContainer)
+	assert.Equal(t, "rancher/k3s-upgrade", upgradeContainer.Image)
+	assert.Empty(t, upgradeContainer.Command)
+	assert.Empty(t, upgradeContainer.Args)
 
 	assert.Equal(t, version, upgradePlan.Spec.Version)
 	assert.EqualValues(t, 2, upgradePlan.Spec.Concurrency)
