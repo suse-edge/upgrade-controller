@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"slices"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/version"
@@ -83,16 +84,11 @@ func (r *UpgradePlan) ValidateUpdate(old runtime.Object) (admission.Warnings, er
 		}
 	}
 
+	disallowingUpdateStates := []string{UpgradeInProgress, UpgradePending, UpgradeError}
+
 	for _, condition := range r.Status.Conditions {
-		// Block edit if an upgrade process is currently running
-		switch condition.Reason {
-		case UpgradeInProgress:
-			return nil, fmt.Errorf("detected 'InProgress' condition in upgrade plan condition list, cannot apply edit. Condition: %s", condition.Type)
-		case UpgradePending:
-			return nil, fmt.Errorf("detected 'Pending' condition in upgrade plan condition list, cannot apply edit. Condition: %s", condition.Type)
-		case UpgradeError:
-			// Transient error during component execution
-			return nil, fmt.Errorf("detected plan with 'Error' condition, cannot apply edit. Condition:  %s", condition.Type)
+		if slices.Contains(disallowingUpdateStates, condition.Reason) {
+			return nil, fmt.Errorf("upgrade plan cannot be edited while condition '%s' is in '%s' state", condition.Type, condition.Reason)
 		}
 	}
 
