@@ -9,8 +9,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+const (
+	planNameSuffix = "abcdef"
+	releaseVersion = "3.1.0"
+)
+
 func TestOSUpgradeSecret(t *testing.T) {
-	nameSuffix := "abcdef"
 	os := &lifecyclev1alpha1.OperatingSystem{
 		Version:     "6.0",
 		ZypperID:    "SL-Micro",
@@ -21,7 +25,7 @@ func TestOSUpgradeSecret(t *testing.T) {
 		"lifecycle.suse.com/x": "z",
 	}
 
-	secret, err := OSUpgradeSecret(nameSuffix, os, annotations)
+	secret, err := OSUpgradeSecret(planNameSuffix, os, annotations)
 	require.NoError(t, err)
 
 	assert.Equal(t, "Secret", secret.TypeMeta.Kind)
@@ -43,8 +47,6 @@ func TestOSUpgradeSecret(t *testing.T) {
 }
 
 func TestOSControlPlanePlan(t *testing.T) {
-	nameSuffix := "abcdef"
-	releaseVersion := "3.1.0"
 	secretName := "some-secret"
 	os := &lifecyclev1alpha1.OperatingSystem{
 		Version:  "6.0",
@@ -54,7 +56,7 @@ func TestOSControlPlanePlan(t *testing.T) {
 		"lifecycle.suse.com/x": "z",
 	}
 
-	upgradePlan := OSControlPlanePlan(nameSuffix, releaseVersion, secretName, os, false, annotations)
+	upgradePlan := OSControlPlanePlan(planNameSuffix, releaseVersion, secretName, os, false, annotations)
 	require.NotNil(t, upgradePlan)
 
 	assert.Equal(t, "Plan", upgradePlan.TypeMeta.Kind)
@@ -114,8 +116,6 @@ func TestOSControlPlanePlan(t *testing.T) {
 }
 
 func TestOSWorkerPlan(t *testing.T) {
-	nameSuffix := "abcdef"
-	releaseVersion := "3.1.0"
 	secretName := "some-secret"
 	os := &lifecyclev1alpha1.OperatingSystem{
 		Version:  "6.0",
@@ -125,7 +125,7 @@ func TestOSWorkerPlan(t *testing.T) {
 		"lifecycle.suse.com/x": "z",
 	}
 
-	upgradePlan := OSWorkerPlan(nameSuffix, releaseVersion, secretName, os, false, annotations)
+	upgradePlan := OSWorkerPlan(planNameSuffix, releaseVersion, secretName, os, false, annotations)
 	require.NotNil(t, upgradePlan)
 
 	assert.Equal(t, "Plan", upgradePlan.TypeMeta.Kind)

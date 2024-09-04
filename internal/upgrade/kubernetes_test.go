@@ -9,13 +9,12 @@ import (
 )
 
 func TestKubernetesControlPlanePlan_RKE2(t *testing.T) {
-	nameSuffix := "abcdef"
 	version := "v1.30.2+rke2r1"
 	annotations := map[string]string{
 		"lifecycle.suse.com/x": "z",
 	}
 
-	upgradePlan := KubernetesControlPlanePlan(nameSuffix, version, false, annotations)
+	upgradePlan := KubernetesControlPlanePlan(planNameSuffix, version, false, annotations)
 	require.NotNil(t, upgradePlan)
 
 	assert.Equal(t, "Plan", upgradePlan.TypeMeta.Kind)
@@ -72,13 +71,12 @@ func TestKubernetesControlPlanePlan_RKE2(t *testing.T) {
 }
 
 func TestKubernetesControlPlanePlan_K3s(t *testing.T) {
-	nameSuffix := "abcdef"
 	version := "v1.30.2+k3s1"
 	annotations := map[string]string{
 		"lifecycle.suse.com/x": "z",
 	}
 
-	upgradePlan := KubernetesControlPlanePlan(nameSuffix, version, false, annotations)
+	upgradePlan := KubernetesControlPlanePlan(planNameSuffix, version, false, annotations)
 	require.NotNil(t, upgradePlan)
 
 	assert.Equal(t, "Plan", upgradePlan.TypeMeta.Kind)
@@ -135,13 +133,12 @@ func TestKubernetesControlPlanePlan_K3s(t *testing.T) {
 }
 
 func TestKubernetesWorkerPlan_RKE2(t *testing.T) {
-	nameSuffix := "abcdef"
 	version := "v1.30.2+rke2r1"
 	annotations := map[string]string{
 		"lifecycle.suse.com/x": "z",
 	}
 
-	upgradePlan := KubernetesWorkerPlan(nameSuffix, version, false, annotations)
+	upgradePlan := KubernetesWorkerPlan(planNameSuffix, version, false, annotations)
 	require.NotNil(t, upgradePlan)
 
 	assert.Equal(t, "Plan", upgradePlan.TypeMeta.Kind)
@@ -184,13 +181,12 @@ func TestKubernetesWorkerPlan_RKE2(t *testing.T) {
 }
 
 func TestKubernetesWorkerPlan_K3s(t *testing.T) {
-	nameSuffix := "abcdef"
 	version := "v1.30.2+k3s1"
 	annotations := map[string]string{
 		"lifecycle.suse.com/x": "z",
 	}
 
-	upgradePlan := KubernetesWorkerPlan(nameSuffix, version, false, annotations)
+	upgradePlan := KubernetesWorkerPlan(planNameSuffix, version, false, annotations)
 	require.NotNil(t, upgradePlan)
 
 	assert.Equal(t, "Plan", upgradePlan.TypeMeta.Kind)
