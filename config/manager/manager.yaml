@@ -72,6 +72,10 @@ spec:
                 fieldPath: metadata.namespace
           - name: RELEASE_MANIFEST_IMAGE
             value: registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/release-manifest
+          - name: KUBECTL_IMAGE
+            value: registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/kubectl
+          - name: KUBECTL_VERSION
+            value: 1.30.3
           - name: SERVICE_ACCOUNT_NAME
             valueFrom:
               fieldRef:
