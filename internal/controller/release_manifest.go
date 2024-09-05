@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
@@ -34,13 +35,11 @@ func (r *UpgradePlanReconciler) retrieveReleaseManifest(ctx context.Context, upg
 
 func (r *UpgradePlanReconciler) createReleaseManifest(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) error {
 	annotations := upgrade.PlanIdentifierAnnotations(upgradePlan.Name, upgradePlan.Namespace)
-	job, err := upgrade.ReleaseManifestInstallJob(
-		r.ReleaseManifestImage,
-		upgradePlan.Spec.ReleaseVersion,
-		r.Kubectl,
-		r.ServiceAccount,
-		upgradePlan.Namespace,
-		annotations)
+	releaseManifest := upgrade.ContainerImage{
+		Name:    r.ReleaseManifestImage,
+		Version: strings.TrimPrefix(upgradePlan.Spec.ReleaseVersion, "v"),
+	}
+	job, err := upgrade.ReleaseManifestInstallJob(releaseManifest, r.Kubectl, r.ServiceAccount, upgradePlan.Namespace, annotations)
 	if err != nil {
 		return err
 	}

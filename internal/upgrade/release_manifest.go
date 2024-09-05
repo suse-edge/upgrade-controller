@@ -18,16 +18,14 @@ func (image ContainerImage) String() string {
 	return fmt.Sprintf("%s:%s", image.Name, image.Version)
 }
 
-func ReleaseManifestInstallJob(releaseManifestImage, releaseManifestVersion string, kubectl ContainerImage, serviceAccount, namespace string, annotations map[string]string) (*batchv1.Job, error) {
-	if releaseManifestImage == "" {
+func ReleaseManifestInstallJob(releaseManifest, kubectl ContainerImage, serviceAccount, namespace string, annotations map[string]string) (*batchv1.Job, error) {
+	if releaseManifest.Name == "" {
 		return nil, fmt.Errorf("release manifest image is empty")
-	} else if releaseManifestVersion == "" {
+	} else if releaseManifest.Version == "" {
 		return nil, fmt.Errorf("release manifest version is empty")
 	}
 
-	releaseManifestVersion = strings.TrimPrefix(releaseManifestVersion, "v")
-	workloadName := fmt.Sprintf("apply-release-manifest-%s", strings.ReplaceAll(releaseManifestVersion, ".", "-"))
-	releaseManifestImage = fmt.Sprintf("%s:%s", releaseManifestImage, releaseManifestVersion)
+	workloadName := fmt.Sprintf("apply-release-manifest-%s", strings.ReplaceAll(releaseManifest.Version, ".", "-"))
 	ttl := int32(0)
 
 	volumeMount := corev1.VolumeMount{
@@ -56,7 +54,7 @@ func ReleaseManifestInstallJob(releaseManifestImage, releaseManifestVersion stri
 					InitContainers: []corev1.Container{
 						{
 							Name:         fmt.Sprintf("init-%s", workloadName),
-							Image:        releaseManifestImage,
+							Image:        releaseManifest.String(),
 							Command:      []string{"cp", "release_manifest.yaml", releaseManifestPath},
 							VolumeMounts: []corev1.VolumeMount{volumeMount},
 						},

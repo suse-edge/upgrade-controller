@@ -8,8 +8,10 @@ import (
 )
 
 func TestReleaseManifestInstallJob(t *testing.T) {
-	releaseImageName := "registry.suse.com/edge/release-manifest"
-	releaseImageVersion := "3.1.0"
+	releaseManifest := ContainerImage{
+		Name:    "registry.suse.com/edge/release-manifest",
+		Version: "3.1.0",
+	}
 	kubectl := ContainerImage{
 		Name:    "registry.suse.com/edge/kubectl",
 		Version: "1.30.3",
@@ -20,7 +22,7 @@ func TestReleaseManifestInstallJob(t *testing.T) {
 		"lifecycle.suse.com/x": "z",
 	}
 
-	job, err := ReleaseManifestInstallJob(releaseImageName, releaseImageVersion, kubectl, serviceAccount, namespace, annotations)
+	job, err := ReleaseManifestInstallJob(releaseManifest, kubectl, serviceAccount, namespace, annotations)
 	require.NoError(t, err)
 
 	assert.Equal(t, "batch/v1", job.TypeMeta.APIVersion)
@@ -68,12 +70,12 @@ func TestReleaseManifestInstallJob(t *testing.T) {
 	ttl := int32(0)
 	assert.Equal(t, &ttl, job.Spec.TTLSecondsAfterFinished)
 
-	job, err = ReleaseManifestInstallJob("", releaseImageVersion, kubectl, serviceAccount, namespace, annotations)
+	job, err = ReleaseManifestInstallJob(ContainerImage{Version: "3.1.0"}, kubectl, serviceAccount, namespace, annotations)
 	require.Error(t, err)
 	assert.EqualError(t, err, "release manifest image is empty")
 	assert.Nil(t, job)
 
-	job, err = ReleaseManifestInstallJob(releaseImageName, "", kubectl, serviceAccount, namespace, annotations)
+	job, err = ReleaseManifestInstallJob(ContainerImage{Name: "registry.suse.com/edge/release-manifest"}, kubectl, serviceAccount, namespace, annotations)
 	require.Error(t, err)
 	assert.EqualError(t, err, "release manifest version is empty")
 	assert.Nil(t, job)
