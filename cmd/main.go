@@ -181,8 +181,10 @@ func main() {
 		Recorder:             mgr.GetEventRecorderFor("upgrade-plan-controller"),
 		ServiceAccount:       serviceAccountName,
 		ReleaseManifestImage: releaseManifestImage,
-		KubectlImage:         kubectlImage,
-		KubectlVersion:       kubectlVersion,
+		Kubectl: upgrade.ContainerImage{
+			Name:    kubectlImage,
+			Version: kubectlVersion,
+		},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "UpgradePlan")
 		os.Exit(1)

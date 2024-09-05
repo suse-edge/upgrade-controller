@@ -37,8 +37,7 @@ func (r *UpgradePlanReconciler) createReleaseManifest(ctx context.Context, upgra
 	job, err := upgrade.ReleaseManifestInstallJob(
 		r.ReleaseManifestImage,
 		upgradePlan.Spec.ReleaseVersion,
-		r.KubectlImage,
-		r.KubectlVersion,
+		r.Kubectl,
 		r.ServiceAccount,
 		upgradePlan.Namespace,
 		annotations)

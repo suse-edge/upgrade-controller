@@ -9,7 +9,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ReleaseManifestInstallJob(releaseManifestImage, releaseManifestVersion, kubectlImage, kubectlVersion, serviceAccount, namespace string, annotations map[string]string) (*batchv1.Job, error) {
+type ContainerImage struct {
+	Name    string
+	Version string
+}
+
+func (image ContainerImage) String() string {
+	return fmt.Sprintf("%s:%s", image.Name, image.Version)
+}
+
+func ReleaseManifestInstallJob(releaseManifestImage, releaseManifestVersion string, kubectl ContainerImage, serviceAccount, namespace string, annotations map[string]string) (*batchv1.Job, error) {
 	if releaseManifestImage == "" {
 		return nil, fmt.Errorf("release manifest image is empty")
 	} else if releaseManifestVersion == "" {
@@ -55,7 +64,7 @@ func ReleaseManifestInstallJob(releaseManifestImage, releaseManifestVersion, kub
 					Containers: []corev1.Container{
 						{
 							Name:         workloadName,
-							Image:        fmt.Sprintf("%s:%s", kubectlImage, kubectlVersion),
+							Image:        kubectl.String(),
 							Args:         []string{"apply", "-f", releaseManifestPath},
 							VolumeMounts: []corev1.VolumeMount{volumeMount},
 						},
