@@ -55,6 +55,7 @@ type UpgradePlanReconciler struct {
 	Recorder             record.EventRecorder
 	ServiceAccount       string
 	ReleaseManifestImage string
+	Kubectl              upgrade.ContainerImage
 }
 
 // +kubebuilder:rbac:groups=lifecycle.suse.com,resources=upgradeplans,verbs=get;list;watch;create;update;patch;delete

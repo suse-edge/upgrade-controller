@@ -58,7 +58,11 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
-const defaultReleaseManifestImage = "registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/suse/release-manifest"
+const (
+	defaultReleaseManifestImage = "registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/suse/release-manifest"
+	defaultKubectlImage         = "registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/kubectl"
+	defaultKubectlVersion       = "1.30.3"
+)
 
 func main() {
 	var metricsAddr string
@@ -68,6 +72,8 @@ func main() {
 	var enableHTTP2 bool
 	var watchNamespace string
 	var releaseManifestImage string
+	var kubectlImage string
+	var kubectlVersion string
 	var serviceAccountName string
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metric endpoint binds to. "+
@@ -84,6 +90,10 @@ func main() {
 		"Namespace that the controller watches to reconcile resources.")
 	flag.StringVar(&releaseManifestImage, "release-manifest-image", os.Getenv("RELEASE_MANIFEST_IMAGE"),
 		"Source of release manifest container images")
+	flag.StringVar(&kubectlImage, "kubectl-image", os.Getenv("KUBECTL_IMAGE"),
+		"Source of the kubectl container image")
+	flag.StringVar(&kubectlVersion, "kubectl-version", os.Getenv("KUBECTL_VERSION"),
+		"Version of the kubectl container image")
 	flag.StringVar(&serviceAccountName, "service-account-name", os.Getenv("SERVICE_ACCOUNT_NAME"),
 		"Service account of the controller")
 
@@ -127,6 +137,12 @@ func main() {
 	if releaseManifestImage == "" {
 		releaseManifestImage = defaultReleaseManifestImage
 	}
+	if kubectlImage == "" {
+		kubectlImage = defaultKubectlImage
+	}
+	if kubectlVersion == "" {
+		kubectlVersion = defaultKubectlVersion
+	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
@@ -165,6 +181,10 @@ func main() {
 		Recorder:             mgr.GetEventRecorderFor("upgrade-plan-controller"),
 		ServiceAccount:       serviceAccountName,
 		ReleaseManifestImage: releaseManifestImage,
+		Kubectl: upgrade.ContainerImage{
+			Name:    kubectlImage,
+			Version: kubectlVersion,
+		},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "UpgradePlan")
 		os.Exit(1)
