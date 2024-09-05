@@ -165,6 +165,8 @@ func main() {
 		Recorder:             mgr.GetEventRecorderFor("upgrade-plan-controller"),
 		ServiceAccount:       serviceAccountName,
 		ReleaseManifestImage: releaseManifestImage,
+		KubectlImage:         "registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/kubectl",
+		KubectlVersion:       "1.30.3",
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "UpgradePlan")
 		os.Exit(1)

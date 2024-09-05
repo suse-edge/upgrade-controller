@@ -34,7 +34,14 @@ func (r *UpgradePlanReconciler) retrieveReleaseManifest(ctx context.Context, upg
 
 func (r *UpgradePlanReconciler) createReleaseManifest(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) error {
 	annotations := upgrade.PlanIdentifierAnnotations(upgradePlan.Name, upgradePlan.Namespace)
-	job, err := upgrade.ReleaseManifestInstallJob(r.ReleaseManifestImage, upgradePlan.Spec.ReleaseVersion, r.ServiceAccount, upgradePlan.Namespace, annotations)
+	job, err := upgrade.ReleaseManifestInstallJob(
+		r.ReleaseManifestImage,
+		upgradePlan.Spec.ReleaseVersion,
+		r.KubectlImage,
+		r.KubectlVersion,
+		r.ServiceAccount,
+		upgradePlan.Namespace,
+		annotations)
 	if err != nil {
 		return err
 	}

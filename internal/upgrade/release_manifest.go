@@ -9,17 +9,23 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ReleaseManifestInstallJob(image, version, serviceAccount, namespace string, annotations map[string]string) (*batchv1.Job, error) {
-	if image == "" {
+func ReleaseManifestInstallJob(releaseManifestImage, releaseManifestVersion, kubectlImage, kubectlVersion, serviceAccount, namespace string, annotations map[string]string) (*batchv1.Job, error) {
+	if releaseManifestImage == "" {
 		return nil, fmt.Errorf("release manifest image is empty")
-	} else if version == "" {
+	} else if releaseManifestVersion == "" {
 		return nil, fmt.Errorf("release manifest version is empty")
 	}
 
-	version = strings.TrimPrefix(version, "v")
-	workloadName := fmt.Sprintf("apply-release-manifest-%s", strings.ReplaceAll(version, ".", "-"))
-	image = fmt.Sprintf("%s:%s", image, version)
+	releaseManifestVersion = strings.TrimPrefix(releaseManifestVersion, "v")
+	workloadName := fmt.Sprintf("apply-release-manifest-%s", strings.ReplaceAll(releaseManifestVersion, ".", "-"))
+	releaseManifestImage = fmt.Sprintf("%s:%s", releaseManifestImage, releaseManifestVersion)
 	ttl := int32(0)
+
+	volumeMount := corev1.VolumeMount{
+		Name:      "release",
+		MountPath: "/release",
+	}
+	releaseManifestPath := "/release/manifest.yaml"
 
 	return &batchv1.Job{
 		TypeMeta: metav1.TypeMeta{
@@ -38,11 +44,28 @@ func ReleaseManifestInstallJob(image, version, serviceAccount, namespace string,
 					Namespace: namespace,
 				},
 				Spec: corev1.PodSpec{
+					InitContainers: []corev1.Container{
+						{
+							Name:         fmt.Sprintf("init-%s", workloadName),
+							Image:        releaseManifestImage,
+							Command:      []string{"cp", "release_manifest.yaml", releaseManifestPath},
+							VolumeMounts: []corev1.VolumeMount{volumeMount},
+						},
+					},
 					Containers: []corev1.Container{
 						{
-							Name:  workloadName,
-							Image: image,
-							Args:  []string{"apply", "-f", "release_manifest.yaml"},
+							Name:         workloadName,
+							Image:        fmt.Sprintf("%s:%s", kubectlImage, kubectlVersion),
+							Args:         []string{"apply", "-f", releaseManifestPath},
+							VolumeMounts: []corev1.VolumeMount{volumeMount},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: volumeMount.Name,
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{},
+							},
 						},
 					},
 					RestartPolicy:      "OnFailure",
