@@ -71,7 +71,7 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
           - name: RELEASE_MANIFEST_IMAGE
-            value: registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/suse/release-manifest
+            value: registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/release-manifest
           - name: SERVICE_ACCOUNT_NAME
             valueFrom:
               fieldRef:
