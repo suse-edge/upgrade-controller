@@ -139,7 +139,7 @@ func OSWorkerPlan(nameSuffix, releaseVersion, secretName string, releaseOS *life
 
 func baseOSPlan(planName, releaseVersion, secretName string, drain bool, annotations map[string]string) *upgradecattlev1.Plan {
 	const (
-		planImage = "registry.suse.com/bci/bci-base:15.5"
+		planImage = "registry.suse.com/bci/bci-base:15.6"
 	)
 
 	baseOSplan := baseUpgradePlan(planName, drain, annotations)
@@ -155,7 +155,7 @@ func baseOSPlan(planName, releaseVersion, secretName string, drain bool, annotat
 	baseOSplan.Spec.Cordon = true
 	baseOSplan.Spec.Version = releaseVersion
 
-	baseOSplan.Spec.JobActiveDeadlineSecs = 3600
+	baseOSplan.Spec.JobActiveDeadlineSecs = 43200
 
 	baseOSplan.Spec.Upgrade = &upgradecattlev1.ContainerSpec{
 		Image:   planImage,
