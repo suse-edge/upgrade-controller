@@ -29,6 +29,8 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(
 		return ctrl.Result{}, fmt.Errorf("identifying target kubernetes version: %w", err)
 	}
 
+	conditionType := lifecyclev1alpha1.KubernetesUpgradedCondition
+
 	identifierAnnotations := upgrade.PlanIdentifierAnnotations(upgradePlan.Name, upgradePlan.Namespace)
 	drainControlPlane, drainWorker := parseDrainOptions(nodeList, upgradePlan)
 	controlPlanePlan := upgrade.KubernetesControlPlanePlan(nameSuffix, kubernetesVersion, drainControlPlane, identifierAnnotations)
@@ -37,7 +39,7 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(
 			return ctrl.Result{}, err
 		}
 
-		setInProgressCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "Control plane nodes are being upgraded")
+		setInProgressCondition(upgradePlan, conditionType, "Control plane nodes are being upgraded")
 		return ctrl.Result{}, r.createObject(ctx, upgradePlan, controlPlanePlan)
 	}
 
@@ -47,10 +49,10 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(
 	}
 
 	if !isKubernetesUpgraded(nodeList, selector, kubernetesVersion) {
-		setInProgressCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "Control plane nodes are being upgraded")
+		setInProgressCondition(upgradePlan, conditionType, "Control plane nodes are being upgraded")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	} else if controlPlaneOnlyCluster(nodeList) {
-		setSuccessfulCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "All cluster nodes are upgraded")
+		setSuccessfulCondition(upgradePlan, conditionType, "All cluster nodes are upgraded")
 		return ctrl.Result{Requeue: true}, nil
 	}
 
@@ -60,7 +62,7 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(
 			return ctrl.Result{}, err
 		}
 
-		setInProgressCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "Worker nodes are being upgraded")
+		setInProgressCondition(upgradePlan, conditionType, "Worker nodes are being upgraded")
 		return ctrl.Result{}, r.createObject(ctx, upgradePlan, workerPlan)
 	}
 
@@ -70,11 +72,11 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(
 	}
 
 	if !isKubernetesUpgraded(nodeList, selector, kubernetesVersion) {
-		setInProgressCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "Worker nodes are being upgraded")
+		setInProgressCondition(upgradePlan, conditionType, "Worker nodes are being upgraded")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 
-	setSuccessfulCondition(upgradePlan, lifecyclev1alpha1.KubernetesUpgradedCondition, "All cluster nodes are upgraded")
+	setSuccessfulCondition(upgradePlan, conditionType, "All cluster nodes are upgraded")
 	return ctrl.Result{Requeue: true}, nil
 }
 

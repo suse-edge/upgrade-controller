@@ -38,6 +38,8 @@ func (r *UpgradePlanReconciler) reconcileOS(
 		return ctrl.Result{}, r.createObject(ctx, upgradePlan, secret)
 	}
 
+	conditionType := lifecyclev1alpha1.OperatingSystemUpgradedCondition
+
 	drainControlPlane, drainWorker := parseDrainOptions(nodeList, upgradePlan)
 	controlPlanePlan := upgrade.OSControlPlanePlan(nameSuffix, releaseVersion, secret.Name, releaseOS, drainControlPlane, identifierAnnotations)
 	if err = r.Get(ctx, client.ObjectKeyFromObject(controlPlanePlan), controlPlanePlan); err != nil {
@@ -45,7 +47,7 @@ func (r *UpgradePlanReconciler) reconcileOS(
 			return ctrl.Result{}, err
 		}
 
-		setInProgressCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "Control plane nodes are being upgraded")
+		setInProgressCondition(upgradePlan, conditionType, "Control plane nodes are being upgraded")
 		return ctrl.Result{}, r.createObject(ctx, upgradePlan, controlPlanePlan)
 	}
 
@@ -55,10 +57,10 @@ func (r *UpgradePlanReconciler) reconcileOS(
 	}
 
 	if !isOSUpgraded(nodeList, selector, releaseOS.PrettyName) {
-		setInProgressCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "Control plane nodes are being upgraded")
+		setInProgressCondition(upgradePlan, conditionType, "Control plane nodes are being upgraded")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	} else if controlPlaneOnlyCluster(nodeList) {
-		setSuccessfulCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "All cluster nodes are upgraded")
+		setSuccessfulCondition(upgradePlan, conditionType, "All cluster nodes are upgraded")
 		return ctrl.Result{Requeue: true}, nil
 	}
 
@@ -68,7 +70,7 @@ func (r *UpgradePlanReconciler) reconcileOS(
 			return ctrl.Result{}, err
 		}
 
-		setInProgressCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "Worker nodes are being upgraded")
+		setInProgressCondition(upgradePlan, conditionType, "Worker nodes are being upgraded")
 		return ctrl.Result{}, r.createObject(ctx, upgradePlan, workerPlan)
 	}
 
@@ -78,11 +80,11 @@ func (r *UpgradePlanReconciler) reconcileOS(
 	}
 
 	if !isOSUpgraded(nodeList, selector, releaseOS.PrettyName) {
-		setInProgressCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "Worker nodes are being upgraded")
+		setInProgressCondition(upgradePlan, conditionType, "Worker nodes are being upgraded")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 
-	setSuccessfulCondition(upgradePlan, lifecyclev1alpha1.OperatingSystemUpgradedCondition, "All cluster nodes are upgraded")
+	setSuccessfulCondition(upgradePlan, conditionType, "All cluster nodes are upgraded")
 	return ctrl.Result{Requeue: true}, nil
 }
 
