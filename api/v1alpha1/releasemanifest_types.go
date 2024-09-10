@@ -28,6 +28,13 @@ const (
 	ArchTypeARM Arch = "aarch64"
 )
 
+var SupportedArchitectures = map[string]struct{}{
+	string(ArchTypeX86): {},
+	string(ArchTypeARM): {},
+	ArchTypeX86.Short(): {},
+	ArchTypeARM.Short(): {},
+}
+
 // ReleaseManifestSpec defines the desired state of ReleaseManifest
 type ReleaseManifestSpec struct {
 	ReleaseVersion string     `json:"releaseVersion"`

@@ -16,13 +16,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (r *UpgradePlanReconciler) reconcileKubernetes(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, kubernetes *lifecyclev1alpha1.Kubernetes) (ctrl.Result, error) {
+func (r *UpgradePlanReconciler) reconcileKubernetes(
+	ctx context.Context,
+	upgradePlan *lifecyclev1alpha1.UpgradePlan,
+	kubernetes *lifecyclev1alpha1.Kubernetes,
+	nodeList *corev1.NodeList,
+) (ctrl.Result, error) {
 	nameSuffix := upgradePlan.Status.SUCNameSuffix
-
-	nodeList := &corev1.NodeList{}
-	if err := r.List(ctx, nodeList); err != nil {
-		return ctrl.Result{}, fmt.Errorf("listing nodes: %w", err)
-	}
 
 	kubernetesVersion, err := targetKubernetesVersion(nodeList, kubernetes)
 	if err != nil {

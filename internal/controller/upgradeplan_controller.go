@@ -162,6 +162,23 @@ func (r *UpgradePlanReconciler) reconcileDelete(ctx context.Context, upgradePlan
 }
 
 func (r *UpgradePlanReconciler) reconcileNormal(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) (ctrl.Result, error) {
+	nodeList := &corev1.NodeList{}
+	if err := r.List(ctx, nodeList); err != nil {
+		return ctrl.Result{}, fmt.Errorf("listing nodes: %w", err)
+	}
+
+	if unsupportedNodes := findUnsupportedNodes(nodeList); len(unsupportedNodes) > 0 {
+		condition := metav1.Condition{
+			Type:    lifecyclev1alpha1.ValidationFailedCondition,
+			Status:  metav1.ConditionTrue,
+			Reason:  lifecyclev1alpha1.UnsupportedArchitectureReason,
+			Message: fmt.Sprintf("One or more cluster nodes are running on unsupported architecture: %s", unsupportedNodes),
+		}
+		meta.SetStatusCondition(&upgradePlan.Status.Conditions, condition)
+
+		return ctrl.Result{}, nil
+	}
+
 	release, err := r.retrieveReleaseManifest(ctx, upgradePlan)
 	if err != nil {
 		if !errors.Is(err, errReleaseManifestNotFound) {
@@ -198,9 +215,9 @@ func (r *UpgradePlanReconciler) reconcileNormal(ctx context.Context, upgradePlan
 
 	switch {
 	case !meta.IsStatusConditionTrue(upgradePlan.Status.Conditions, lifecyclev1alpha1.OperatingSystemUpgradedCondition):
-		return r.reconcileOS(ctx, upgradePlan, release.Spec.ReleaseVersion, &release.Spec.Components.OperatingSystem)
+		return r.reconcileOS(ctx, upgradePlan, release.Spec.ReleaseVersion, &release.Spec.Components.OperatingSystem, nodeList)
 	case !meta.IsStatusConditionTrue(upgradePlan.Status.Conditions, lifecyclev1alpha1.KubernetesUpgradedCondition):
-		return r.reconcileKubernetes(ctx, upgradePlan, &release.Spec.Components.Kubernetes)
+		return r.reconcileKubernetes(ctx, upgradePlan, &release.Spec.Components.Kubernetes, nodeList)
 	}
 
 	for _, chart := range release.Spec.Components.Workloads.Helm {
