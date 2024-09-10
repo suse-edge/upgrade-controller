@@ -3,6 +3,7 @@ package controller
 import (
 	"testing"
 
+	"gopkg.in/yaml.v3"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/stretchr/testify/assert"
@@ -77,32 +78,26 @@ func Test_MergeMaps(t *testing.T) {
 }
 
 func Test_MergeHelmValues(t *testing.T) {
-	installedValuesStr := `{
-  "global": {
-    "ironicIP": "147.28.230.5"
-  },
-  "metal3-ironic": {
-    "service": {
-      "type": "LoadBalancer"
-    },
-    "persistence": {
-      "ironic": {
-        "storageClass": "longhorn"
-      }
-    }
-  }
-}`
+	installedValuesStr := `global:
+  ironicIP: 147.28.230.5
+metal3-ironic:
+  service:
+    type: LoadBalancer
+  persistence:
+    ironic:
+      storageClass: longhorn
+`
 
-	installedValuesMap := map[string]interface{}{
-		"global": map[string]interface{}{
+	installedValuesMap := map[string]any{
+		"global": map[string]any{
 			"ironicIP": "147.28.230.5",
 		},
-		"metal3-ironic": map[string]interface{}{
-			"service": map[string]interface{}{
+		"metal3-ironic": map[string]any{
+			"service": map[string]any{
 				"type": "LoadBalancer",
 			},
-			"persistence": map[string]interface{}{
-				"ironic": map[string]interface{}{
+			"persistence": map[string]any{
+				"ironic": map[string]any{
 					"storageClass": "longhorn",
 				},
 			},
@@ -114,7 +109,7 @@ func Test_MergeHelmValues(t *testing.T) {
 		installedValues any
 		releaseValues   *apiextensionsv1.JSON
 		userValues      *apiextensionsv1.JSON
-		expectedValues  []byte
+		expectedValues  map[string]any
 		expectedErr     string
 	}{
 		{
@@ -125,7 +120,6 @@ func Test_MergeHelmValues(t *testing.T) {
 		{
 			name:            "Empty installed values string, empty release values",
 			installedValues: "",
-			expectedValues:  nil,
 		},
 		{
 			name:            "Empty installed values string, non-empty release values",
@@ -133,12 +127,30 @@ func Test_MergeHelmValues(t *testing.T) {
 			releaseValues: &apiextensionsv1.JSON{
 				Raw: []byte(`{"global": {"ironicIP": "147.28.230.5"}}`),
 			},
-			expectedValues: []byte(`{"global":{"ironicIP":"147.28.230.5"}}`),
+			expectedValues: map[string]any{
+				"global": map[string]any{
+					"ironicIP": "147.28.230.5",
+				},
+			},
 		},
 		{
 			name:            "Non-empty installed values string, empty release values",
 			installedValues: installedValuesStr,
-			expectedValues:  []byte(`{"global":{"ironicIP":"147.28.230.5"},"metal3-ironic":{"persistence":{"ironic":{"storageClass":"longhorn"}},"service":{"type":"LoadBalancer"}}}`),
+			expectedValues: map[string]any{
+				"global": map[string]any{
+					"ironicIP": "147.28.230.5",
+				},
+				"metal3-ironic": map[string]any{
+					"service": map[string]any{
+						"type": "LoadBalancer",
+					},
+					"persistence": map[string]any{
+						"ironic": map[string]any{
+							"storageClass": "longhorn",
+						},
+					},
+				},
+			},
 		},
 		{
 			name:            "Non-empty installed values string, non-empty release values",
@@ -146,25 +158,56 @@ func Test_MergeHelmValues(t *testing.T) {
 			releaseValues: &apiextensionsv1.JSON{
 				Raw: []byte(`{"global": {"ironicIP": "147.28.230.105"}}`),
 			},
-			expectedValues: []byte(`{"global":{"ironicIP":"147.28.230.105"},"metal3-ironic":{"persistence":{"ironic":{"storageClass":"longhorn"}},"service":{"type":"LoadBalancer"}}}`),
+			expectedValues: map[string]any{
+				"global": map[string]any{
+					"ironicIP": "147.28.230.105",
+				},
+				"metal3-ironic": map[string]any{
+					"service": map[string]any{
+						"type": "LoadBalancer",
+					},
+					"persistence": map[string]any{
+						"ironic": map[string]any{
+							"storageClass": "longhorn",
+						},
+					},
+				},
+			},
 		},
 		{
 			name:            "Empty installed values map, empty release values",
-			installedValues: map[string]interface{}{},
-			expectedValues:  nil,
+			installedValues: map[string]any{},
 		},
 		{
 			name:            "Empty installed values map, non-empty release values",
-			installedValues: map[string]interface{}{},
+			installedValues: map[string]any{},
 			releaseValues: &apiextensionsv1.JSON{
 				Raw: []byte(`{"global": {"ironicIP": "147.28.230.5"}}`),
 			},
-			expectedValues: []byte(`{"global":{"ironicIP":"147.28.230.5"}}`),
+			expectedValues: map[string]any{
+				"global": map[string]any{
+					"ironicIP": "147.28.230.5",
+				},
+			},
 		},
 		{
 			name:            "Non-empty installed values map, empty release values",
 			installedValues: installedValuesMap,
-			expectedValues:  []byte(`{"global":{"ironicIP":"147.28.230.5"},"metal3-ironic":{"persistence":{"ironic":{"storageClass":"longhorn"}},"service":{"type":"LoadBalancer"}}}`),
+			expectedValues: map[string]any{
+				"global": map[string]any{
+					"ironicIP": "147.28.230.5",
+				},
+				"metal3-ironic": map[string]any{
+					"service": map[string]any{
+						"type": "LoadBalancer",
+					},
+					"persistence": map[string]any{
+						"ironic": map[string]any{
+							"storageClass": "longhorn",
+						},
+					},
+				},
+			},
 		},
 		{
 			name:            "Non-empty installed values map, non-empty release values",
@@ -172,7 +215,21 @@ func Test_MergeHelmValues(t *testing.T) {
 			releaseValues: &apiextensionsv1.JSON{
 				Raw: []byte(`{"global": {"ironicIP": "147.28.230.105"}}`),
 			},
-			expectedValues: []byte(`{"global":{"ironicIP":"147.28.230.105"},"metal3-ironic":{"persistence":{"ironic":{"storageClass":"longhorn"}},"service":{"type":"LoadBalancer"}}}`),
+			expectedValues: map[string]any{
+				"global": map[string]any{
+					"ironicIP": "147.28.230.105",
+				},
+				"metal3-ironic": map[string]any{
+					"service": map[string]any{
+						"type": "LoadBalancer",
+					},
+					"persistence": map[string]any{
+						"ironic": map[string]any{
+							"storageClass": "longhorn",
+						},
+					},
+				},
+			},
 		},
 		{
 			name:            "Non-empty installed values map, non-empty release values, non-empty user values",
@@ -183,12 +240,26 @@ func Test_MergeHelmValues(t *testing.T) {
 			userValues: &apiextensionsv1.JSON{
 				Raw: []byte(`{"metal3-ironic": {"persistence": {"ironic": {"storageClass": "local-path-provisioner"}}}}`),
 			},
-			expectedValues: []byte(`{"global":{"ironicIP":"147.28.230.105"},"metal3-ironic":{"persistence":{"ironic":{"storageClass":"local-path-provisioner"}},"service":{"type":"LoadBalancer"}}}`),
+			expectedValues: map[string]any{
+				"global": map[string]any{
+					"ironicIP": "147.28.230.105",
+				},
+				"metal3-ironic": map[string]any{
+					"service": map[string]any{
+						"type": "LoadBalancer",
+					},
+					"persistence": map[string]any{
+						"ironic": map[string]any{
+							"storageClass": "local-path-provisioner",
+						},
+					},
+				},
+			},
 		},
 		{
 			name:            "Invalid installed values string",
 			installedValues: "{",
-			expectedErr:     "unmarshaling installed chart values: unexpected end of JSON input",
+			expectedErr:     "unmarshaling installed chart values: yaml: line 1: did not find expected node content",
 		},
 		{
 			name:            "Invalid release values",
@@ -215,9 +286,17 @@ func Test_MergeHelmValues(t *testing.T) {
 				require.Error(t, err)
 				assert.EqualError(t, err, test.expectedErr)
 				assert.Nil(t, values)
+				return
+			}
+
+			require.NoError(t, err)
+
+			if len(test.expectedValues) == 0 {
+				assert.Nil(t, values)
 			} else {
+				b, err := yaml.Marshal(test.expectedValues)
 				require.NoError(t, err)
-				assert.Equal(t, string(test.expectedValues), string(values))
+				assert.Equal(t, string(b), string(values))
 			}
 		})
 	}
