@@ -129,7 +129,7 @@ func validateOSArch(nodeList *corev1.NodeList, supportedArchs []lifecyclev1alpha
 	for _, node := range nodeList.Items {
 		nodeArch := node.Status.NodeInfo.Architecture
 		if _, ok := supportedArchMap[nodeArch]; !ok {
-			return fmt.Errorf("unsuported arch '%s' for '%s' node. Supported archs: %s", nodeArch, node.Name, supportedArchs)
+			return fmt.Errorf("unsupported arch '%s' for '%s' node. Supported archs: %s", nodeArch, node.Name, supportedArchs)
 		}
 	}
 
