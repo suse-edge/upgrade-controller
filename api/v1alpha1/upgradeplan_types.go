@@ -26,6 +26,9 @@ import (
 const (
 	UpgradePlanFinalizer = "upgradeplan.lifecycle.suse.com/finalizer"
 
+	ValidationFailedCondition     = "ValidationFailed"
+	UnsupportedArchitectureReason = "UnsupportedArchitecture"
+
 	OperatingSystemUpgradedCondition = "OSUpgraded"
 	KubernetesUpgradedCondition      = "KubernetesUpgraded"
 
