@@ -143,3 +143,32 @@ func TestIsKubernetesUpgraded(t *testing.T) {
 		})
 	}
 }
+
+func TestControlPlaneOnlyCluster(t *testing.T) {
+	assert.True(t, controlPlaneOnlyCluster(&corev1.NodeList{
+		Items: []corev1.Node{
+			{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"node-role.kubernetes.io/control-plane": "true"}}},
+			{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"node-role.kubernetes.io/control-plane": "true"}}},
+		},
+	}))
+
+	assert.False(t, controlPlaneOnlyCluster(&corev1.NodeList{
+		Items: []corev1.Node{
+			{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"node-role.kubernetes.io/control-plane": "true"}}},
+			{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"node-role.kubernetes.io/control-plane": "false"}}},
+		},
+	}))
+
+	assert.False(t, controlPlaneOnlyCluster(&corev1.NodeList{
+		Items: []corev1.Node{
+			{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"node-role.kubernetes.io/control-plane": "true"}}},
+			{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{}}},
+		},
+	}))
+
+	assert.False(t, controlPlaneOnlyCluster(&corev1.NodeList{
+		Items: []corev1.Node{
+			{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{}}},
+		},
+	}))
+}
