@@ -80,13 +80,13 @@ func TestOSControlPlanePlan(t *testing.T) {
 
 	upgradeContainer := upgradePlan.Spec.Upgrade
 	require.NotNil(t, upgradeContainer)
-	assert.Equal(t, "registry.suse.com/bci/bci-base:15.5", upgradeContainer.Image)
+	assert.Equal(t, "registry.suse.com/bci/bci-base:15.6", upgradeContainer.Image)
 	assert.Equal(t, []string{"chroot", "/host"}, upgradeContainer.Command)
 	assert.Equal(t, []string{"sh", "/run/system-upgrade/secrets/some-secret/os-upgrade.sh"}, upgradeContainer.Args)
 
 	assert.Equal(t, "3.1.0", upgradePlan.Spec.Version)
 	assert.EqualValues(t, 1, upgradePlan.Spec.Concurrency)
-	assert.EqualValues(t, 3600, upgradePlan.Spec.JobActiveDeadlineSecs)
+	assert.EqualValues(t, 43200, upgradePlan.Spec.JobActiveDeadlineSecs)
 	assert.True(t, upgradePlan.Spec.Cordon)
 
 	assert.Equal(t, "system-upgrade-controller", upgradePlan.Spec.ServiceAccountName)
@@ -149,13 +149,13 @@ func TestOSWorkerPlan(t *testing.T) {
 
 	upgradeContainer := upgradePlan.Spec.Upgrade
 	require.NotNil(t, upgradeContainer)
-	assert.Equal(t, "registry.suse.com/bci/bci-base:15.5", upgradeContainer.Image)
+	assert.Equal(t, "registry.suse.com/bci/bci-base:15.6", upgradeContainer.Image)
 	assert.Equal(t, []string{"chroot", "/host"}, upgradeContainer.Command)
 	assert.Equal(t, []string{"sh", "/run/system-upgrade/secrets/some-secret/os-upgrade.sh"}, upgradeContainer.Args)
 
 	assert.Equal(t, "3.1.0", upgradePlan.Spec.Version)
 	assert.EqualValues(t, 2, upgradePlan.Spec.Concurrency)
-	assert.EqualValues(t, 3600, upgradePlan.Spec.JobActiveDeadlineSecs)
+	assert.EqualValues(t, 43200, upgradePlan.Spec.JobActiveDeadlineSecs)
 	assert.True(t, upgradePlan.Spec.Cordon)
 
 	assert.Equal(t, "system-upgrade-controller", upgradePlan.Spec.ServiceAccountName)
