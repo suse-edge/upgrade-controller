@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -171,4 +173,63 @@ func TestControlPlaneOnlyCluster(t *testing.T) {
 			{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{}}},
 		},
 	}))
+}
+
+func TestTargetKubernetesVersion(t *testing.T) {
+	kubernetes := &lifecyclev1alpha1.Kubernetes{
+		K3S: lifecyclev1alpha1.KubernetesDistribution{
+			Version: "v1.30.3+k3s1",
+		},
+		RKE2: lifecyclev1alpha1.KubernetesDistribution{
+			Version: "v1.30.3+rke2r1",
+		},
+	}
+
+	tests := []struct {
+		name            string
+		nodes           *corev1.NodeList
+		expectedVersion string
+		expectedError   string
+	}{
+		{
+			name:          "Empty node list",
+			nodes:         &corev1.NodeList{},
+			expectedError: "unable to determine current kubernetes version due to empty node list",
+		},
+		{
+			name: "Unsupported Kubernetes version",
+			nodes: &corev1.NodeList{
+				Items: []corev1.Node{{Status: corev1.NodeStatus{NodeInfo: corev1.NodeSystemInfo{KubeletVersion: "v1.30.3"}}}},
+			},
+			expectedError: "upgrading from kubernetes version v1.30.3 is not supported",
+		},
+		{
+			name: "Target k3s version",
+			nodes: &corev1.NodeList{
+				Items: []corev1.Node{{Status: corev1.NodeStatus{NodeInfo: corev1.NodeSystemInfo{KubeletVersion: "v1.28.12+k3s1"}}}},
+			},
+			expectedVersion: "v1.30.3+k3s1",
+		},
+		{
+			name: "Target RKE2 version",
+			nodes: &corev1.NodeList{
+				Items: []corev1.Node{{Status: corev1.NodeStatus{NodeInfo: corev1.NodeSystemInfo{KubeletVersion: "v1.28.12+rke2r1"}}}},
+			},
+			expectedVersion: "v1.30.3+rke2r1",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			version, err := targetKubernetesVersion(test.nodes, kubernetes)
+			if test.expectedError != "" {
+				require.Error(t, err)
+				assert.EqualError(t, err, test.expectedError)
+				assert.Empty(t, version)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, test.expectedVersion, version)
+			}
+		})
+	}
 }
