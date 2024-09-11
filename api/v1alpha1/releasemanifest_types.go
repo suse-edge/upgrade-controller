@@ -28,11 +28,30 @@ const (
 	ArchTypeARM Arch = "aarch64"
 )
 
-var SupportedArchitectures = map[string]struct{}{
-	string(ArchTypeX86): {},
-	string(ArchTypeARM): {},
-	ArchTypeX86.Short(): {},
-	ArchTypeARM.Short(): {},
+// +kubebuilder:validation:Enum=x86_64;aarch64
+type Arch string
+
+func (a Arch) Short() string {
+	switch a {
+	case ArchTypeX86:
+		return "amd64"
+	case ArchTypeARM:
+		return "arm64"
+	default:
+		message := fmt.Sprintf("unknown arch: %s", a)
+		panic(message)
+	}
+}
+
+func SupportedArchitectures(architectures []Arch) map[string]struct{} {
+	supportedArchitectures := map[string]struct{}{}
+
+	for _, a := range architectures {
+		supportedArchitectures[string(a)] = struct{}{}
+		supportedArchitectures[a.Short()] = struct{}{}
+	}
+
+	return supportedArchitectures
 }
 
 // ReleaseManifestSpec defines the desired state of ReleaseManifest
@@ -88,21 +107,6 @@ type OperatingSystem struct {
 	// +kubebuilder:validation:MinItems=1
 	SupportedArchs []Arch `json:"supportedArchs"`
 	PrettyName     string `json:"prettyName"`
-}
-
-// +kubebuilder:validation:Enum=x86_64;aarch64
-type Arch string
-
-func (a Arch) Short() string {
-	switch a {
-	case ArchTypeX86:
-		return "amd64"
-	case ArchTypeARM:
-		return "arm64"
-	default:
-		message := fmt.Sprintf("unknown arch: %s", a)
-		panic(message)
-	}
 }
 
 // +kubebuilder:object:root=true
