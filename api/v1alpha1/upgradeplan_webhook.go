@@ -23,13 +23,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/version"
 	ctrl "sigs.k8s.io/controller-runtime"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
-
-// log is for logging in this package.
-var upgradeplanlog = logf.Log.WithName("upgradeplan-resource")
 
 // SetupWebhookWithManager will setup the manager to manage the webhooks
 func (r *UpgradePlan) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -46,14 +42,11 @@ var _ webhook.Validator = &UpgradePlan{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *UpgradePlan) ValidateCreate() (admission.Warnings, error) {
-	upgradeplanlog.Info("validate create", "name", r.Name)
 	return nil, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (r *UpgradePlan) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
-	upgradeplanlog.Info("validate update", "name", r.Name)
-
 	oldPlan, ok := old.(*UpgradePlan)
 	if !ok {
 		return nil, fmt.Errorf("unexpected object type: %T", old)
@@ -97,6 +90,5 @@ func (r *UpgradePlan) ValidateUpdate(old runtime.Object) (admission.Warnings, er
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
 func (r *UpgradePlan) ValidateDelete() (admission.Warnings, error) {
-	upgradeplanlog.Info("validate delete", "name", r.Name)
 	return nil, nil
 }
