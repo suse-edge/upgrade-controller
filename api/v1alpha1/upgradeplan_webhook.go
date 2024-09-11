@@ -42,6 +42,15 @@ var _ webhook.Validator = &UpgradePlan{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *UpgradePlan) ValidateCreate() (admission.Warnings, error) {
+	if r.Spec.ReleaseVersion == "" {
+		return nil, fmt.Errorf("release version is required")
+	}
+
+	_, err := version.ParseSemantic(r.Spec.ReleaseVersion)
+	if err != nil {
+		return nil, fmt.Errorf("'%s' is not a semantic version", r.Spec.ReleaseVersion)
+	}
+
 	return nil, nil
 }
 
