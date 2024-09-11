@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,6 +12,9 @@ import (
 )
 
 func TestFindUnsupportedNodes(t *testing.T) {
+	supportedArchitectures := lifecyclev1alpha1.SupportedArchitectures(
+		[]lifecyclev1alpha1.Arch{lifecyclev1alpha1.ArchTypeARM, lifecyclev1alpha1.ArchTypeX86})
+
 	nodes := &corev1.NodeList{
 		Items: []corev1.Node{
 			{
@@ -39,7 +43,7 @@ func TestFindUnsupportedNodes(t *testing.T) {
 			},
 		}}
 
-	assert.Equal(t, []string{"node1", "node4"}, findUnsupportedNodes(nodes))
+	assert.Equal(t, []string{"node1", "node4"}, findUnsupportedNodes(nodes, supportedArchitectures))
 }
 
 func TestIsOSUpgraded(t *testing.T) {

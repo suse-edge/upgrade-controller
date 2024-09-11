@@ -114,11 +114,11 @@ func isOSUpgraded(nodeList *corev1.NodeList, selector labels.Selector, osPrettyN
 	return true
 }
 
-func findUnsupportedNodes(nodeList *corev1.NodeList) []string {
+func findUnsupportedNodes(nodeList *corev1.NodeList, supportedArchitectures map[string]struct{}) []string {
 	var unsupported []string
 
 	for _, node := range nodeList.Items {
-		if _, ok := lifecyclev1alpha1.SupportedArchitectures[node.Status.NodeInfo.Architecture]; !ok {
+		if _, ok := supportedArchitectures[node.Status.NodeInfo.Architecture]; !ok {
 			unsupported = append(unsupported, node.Name)
 		}
 	}

@@ -162,12 +162,22 @@ func (r *UpgradePlanReconciler) reconcileDelete(ctx context.Context, upgradePlan
 }
 
 func (r *UpgradePlanReconciler) reconcileNormal(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) (ctrl.Result, error) {
+	release, err := r.retrieveReleaseManifest(ctx, upgradePlan)
+	if err != nil {
+		if !errors.Is(err, errReleaseManifestNotFound) {
+			return ctrl.Result{}, fmt.Errorf("retrieving release manifest: %w", err)
+		}
+
+		return ctrl.Result{}, r.createReleaseManifest(ctx, upgradePlan)
+	}
+
 	nodeList := &corev1.NodeList{}
 	if err := r.List(ctx, nodeList); err != nil {
 		return ctrl.Result{}, fmt.Errorf("listing nodes: %w", err)
 	}
 
-	if unsupportedNodes := findUnsupportedNodes(nodeList); len(unsupportedNodes) > 0 {
+	supportedArchitectures := lifecyclev1alpha1.SupportedArchitectures(release.Spec.Components.OperatingSystem.SupportedArchs)
+	if unsupportedNodes := findUnsupportedNodes(nodeList, supportedArchitectures); len(unsupportedNodes) > 0 {
 		condition := metav1.Condition{
 			Type:    lifecyclev1alpha1.ValidationFailedCondition,
 			Status:  metav1.ConditionTrue,
@@ -177,15 +187,6 @@ func (r *UpgradePlanReconciler) reconcileNormal(ctx context.Context, upgradePlan
 		meta.SetStatusCondition(&upgradePlan.Status.Conditions, condition)
 
 		return ctrl.Result{}, nil
-	}
-
-	release, err := r.retrieveReleaseManifest(ctx, upgradePlan)
-	if err != nil {
-		if !errors.Is(err, errReleaseManifestNotFound) {
-			return ctrl.Result{}, fmt.Errorf("retrieving release manifest: %w", err)
-		}
-
-		return ctrl.Result{}, r.createReleaseManifest(ctx, upgradePlan)
 	}
 
 	if upgradePlan.Status.ObservedGeneration != upgradePlan.Generation {
