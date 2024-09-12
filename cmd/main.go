@@ -59,7 +59,7 @@ func init() {
 }
 
 const (
-	defaultReleaseManifestImage = "registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/suse/release-manifest"
+	defaultReleaseManifestImage = "registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/release-manifest"
 	defaultKubectlImage         = "registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/kubectl"
 	defaultKubectlVersion       = "1.30.3"
 )
