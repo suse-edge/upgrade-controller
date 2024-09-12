@@ -4,7 +4,7 @@ metadata:
   labels:
     app.kubernetes.io/name: upgrade-controller
     app.kubernetes.io/managed-by: kustomize
-  name: upgradeplan-sample
+  name: upgrade-plan-3-1-0
   namespace: upgrade-controller-system
 spec:
   releaseVersion: 3.1.0
