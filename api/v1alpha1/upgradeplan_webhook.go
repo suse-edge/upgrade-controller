@@ -42,16 +42,8 @@ var _ webhook.Validator = &UpgradePlan{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *UpgradePlan) ValidateCreate() (admission.Warnings, error) {
-	if r.Spec.ReleaseVersion == "" {
-		return nil, fmt.Errorf("release version is required")
-	}
-
-	_, err := version.ParseSemantic(r.Spec.ReleaseVersion)
-	if err != nil {
-		return nil, fmt.Errorf("'%s' is not a semantic version", r.Spec.ReleaseVersion)
-	}
-
-	return nil, nil
+	_, err := validateReleaseVersion(r.Spec.ReleaseVersion)
+	return nil, err
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
@@ -67,12 +59,20 @@ func (r *UpgradePlan) ValidateUpdate(old runtime.Object) (admission.Warnings, er
 		return nil, nil
 	}
 
-	if oldPlan.Status.LastSuccessfulReleaseVersion != "" {
-		newReleaseVersion, err := version.ParseSemantic(r.Spec.ReleaseVersion)
-		if err != nil {
-			return nil, fmt.Errorf("'%s' is not a semantic version", r.Spec.ReleaseVersion)
-		}
+	disallowingUpdateStates := []string{UpgradeInProgress, UpgradePending, UpgradeError}
 
+	for _, condition := range r.Status.Conditions {
+		if slices.Contains(disallowingUpdateStates, condition.Reason) {
+			return nil, fmt.Errorf("upgrade plan cannot be edited while condition '%s' is in '%s' state", condition.Type, condition.Reason)
+		}
+	}
+
+	newReleaseVersion, err := validateReleaseVersion(r.Spec.ReleaseVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	if oldPlan.Status.LastSuccessfulReleaseVersion != "" {
 		indicator, err := newReleaseVersion.Compare(oldPlan.Status.LastSuccessfulReleaseVersion)
 		if err != nil {
 			return nil, fmt.Errorf("comparing versions: %w", err)
@@ -82,15 +82,7 @@ func (r *UpgradePlan) ValidateUpdate(old runtime.Object) (admission.Warnings, er
 		case 0:
 			return nil, fmt.Errorf("any edits over '%s' must come with an increment of the releaseVersion", r.Name)
 		case -1:
-			return nil, fmt.Errorf("new releaseVersion '%s' must be greater than the currently applied '%s' releaseVersion", r.Spec.ReleaseVersion, oldPlan.Status.LastSuccessfulReleaseVersion)
-		}
-	}
-
-	disallowingUpdateStates := []string{UpgradeInProgress, UpgradePending, UpgradeError}
-
-	for _, condition := range r.Status.Conditions {
-		if slices.Contains(disallowingUpdateStates, condition.Reason) {
-			return nil, fmt.Errorf("upgrade plan cannot be edited while condition '%s' is in '%s' state", condition.Type, condition.Reason)
+			return nil, fmt.Errorf("new releaseVersion must be greater than the currently applied one ('%s')", oldPlan.Status.LastSuccessfulReleaseVersion)
 		}
 	}
 
@@ -100,4 +92,17 @@ func (r *UpgradePlan) ValidateUpdate(old runtime.Object) (admission.Warnings, er
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
 func (r *UpgradePlan) ValidateDelete() (admission.Warnings, error) {
 	return nil, nil
+}
+
+func validateReleaseVersion(releaseVersion string) (*version.Version, error) {
+	if releaseVersion == "" {
+		return nil, fmt.Errorf("release version is required")
+	}
+
+	v, err := version.ParseSemantic(releaseVersion)
+	if err != nil {
+		return nil, fmt.Errorf("'%s' is not a semantic version", releaseVersion)
+	}
+
+	return v, nil
 }
