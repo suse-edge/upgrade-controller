@@ -10,6 +10,11 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
+env:
+  releaseManifestImage: registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/release-manifest
+  kubectlImage: registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/kubectl
+  kubectlVersion: 1.30.3
+
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
