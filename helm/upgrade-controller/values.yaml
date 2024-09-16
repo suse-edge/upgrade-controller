@@ -39,9 +39,11 @@ securityContext:
      - ALL
    allowPrivilegeEscalation: false
 
-service:
+webhookService:
+  name: webhook-server
   type: ClusterIP
-  port: 80
+  port: 443
+  targetPort: 9443
 
 resources: {}
 
