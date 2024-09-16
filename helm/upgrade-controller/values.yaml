@@ -70,18 +70,17 @@ readinessProbe:
   initialDelaySeconds: 5
   periodSeconds: 10
 
-# Additional volumes on the output Deployment definition.
-volumes: []
-# - name: foo
-#   secret:
-#     secretName: mysecret
-#     optional: false
+volumes:
+ - name: cert
+   secret:
+     secretName: webhook-server-cert
+     defaultMode: 420
+     optional: false
 
-# Additional volumeMounts on the output Deployment definition.
-volumeMounts: []
-# - name: foo
-#   mountPath: "/etc/foo"
-#   readOnly: true
+volumeMounts:
+ - name: cert
+   mountPath: "/tmp/k8s-webhook-server/serving-certs"
+   readOnly: true
 
 nodeSelector: {}
 
