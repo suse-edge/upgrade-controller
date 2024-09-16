@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "upgrade-controller.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "upgrade-controller.labels" . | nindent 4 }}
 spec:
