@@ -4,7 +4,7 @@ kind: CustomResourceDefinition
 metadata:
   name: upgradeplans.lifecycle.suse.com
   annotations:
-    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ .Release.Name }}-serving-cert
+    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "upgrade-controller.certificate" . }}
 spec:
   conversion:
     strategy: Webhook
@@ -12,7 +12,7 @@ spec:
       clientConfig:
         service:
           namespace: {{ .Release.Namespace }}
-          name: {{ .Release.Name }}-webhook
+          name: {{ include "upgrade-controller.webhookServiceName" $ }}
           path: /convert
       conversionReviewVersions:
         - v1

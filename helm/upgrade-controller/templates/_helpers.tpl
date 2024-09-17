@@ -60,3 +60,24 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Webhook service name
+*/}}
+{{- define "upgrade-controller.webhookServiceName" -}}
+{{ .Release.Name }}-webhook
+{{- end }}
+
+{{/*
+Certificate issuer name
+*/}}
+{{- define "upgrade-controller.certificateIssuer" -}}
+{{ .Release.Name }}-self-signed-issuer
+{{- end }}
+
+{{/*
+Certificate name
+*/}}
+{{- define "upgrade-controller.certificate" -}}
+{{ .Release.Name }}-serving-cert
+{{- end }}

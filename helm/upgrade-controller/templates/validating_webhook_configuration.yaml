@@ -5,13 +5,13 @@ metadata:
   labels:
     {{- include "upgrade-controller.labels" . | nindent 4 }}
   annotations:
-    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "upgrade-controller.fullname" . }}-serving-cert
+    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "upgrade-controller.certificate" . }}
 webhooks:
   - admissionReviewVersions:
       - v1
     clientConfig:
       service:
-        name: {{ include "upgrade-controller.fullname" . }}-webhook
+        name: {{ include "upgrade-controller.webhookServiceName" . }}
         namespace: {{ .Release.Namespace }}
         path: /validate-lifecycle-suse-com-v1alpha1-upgradeplan
     failurePolicy: Fail
