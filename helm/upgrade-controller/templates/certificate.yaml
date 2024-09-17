@@ -1,0 +1,28 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  labels:
+    {{- include "upgrade-controller.labels" . | nindent 4 }}
+  name: {{ include "upgrade-controller.fullname" . }}-selfsigned-issuer
+  namespace: {{ .Release.Namespace }}
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  labels:
+    {{- include "upgrade-controller.labels" . | nindent 4 }}
+    app.kubernetes.io/component: certificate
+  name: {{ include "upgrade-controller.fullname" . }}-serving-cert
+  namespace: {{ .Release.Namespace }}
+spec:
+  dnsNames:
+  - {{ include "upgrade-controller.fullname" . }}-webhook.{{ .Release.Namespace }}.svc
+  - {{ include "upgrade-controller.fullname" . }}-webhook.{{ .Release.Namespace }}.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: {{ include "upgrade-controller.fullname" . }}-selfsigned-issuer
+  {{- with first .Values.volumes }}
+  secretName: {{ .secret.secretName }}
+  {{- end }}

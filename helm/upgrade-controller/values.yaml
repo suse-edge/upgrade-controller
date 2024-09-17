@@ -65,6 +65,8 @@ readinessProbe:
   initialDelaySeconds: 5
   periodSeconds: 10
 
+# Always keep the cert volume first in case others are appended
+# or adjust the certificate resources lookup.
 volumes:
  - name: cert
    secret:
