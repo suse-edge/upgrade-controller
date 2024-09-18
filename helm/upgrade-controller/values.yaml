@@ -11,9 +11,11 @@ image:
   tag: ""
 
 env:
-  releaseManifestImage: registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/release-manifest
-  kubectlImage: registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/kubectl
-  kubectlVersion: 1.30.3
+  releaseManifest:
+    image: registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/release-manifest
+  kubectl:
+    image: registry.opensuse.org/isv/suse/edge/lifecycle/containerfile/kubectl
+    version: 1.30.3
 
 imagePullSecrets: []
 nameOverride: ""

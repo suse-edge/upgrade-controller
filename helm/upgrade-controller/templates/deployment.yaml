@@ -44,11 +44,11 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: RELEASE_MANIFEST_IMAGE
-              value: {{ .Values.env.releaseManifestImage }}
+              value: {{ .Values.env.releaseManifest.image }}
             - name: KUBECTL_IMAGE
-              value: {{ .Values.env.kubectlImage }}
+              value: {{ .Values.env.kubectl.image }}
             - name: KUBECTL_VERSION
-              value: {{ .Values.env.kubectlVersion }}
+              value: {{ .Values.env.kubectl.version }}
             - name: SERVICE_ACCOUNT_NAME
               valueFrom:
                 fieldRef:
