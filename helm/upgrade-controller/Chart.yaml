@@ -4,3 +4,8 @@ description: A Helm chart for Upgrade Controller
 type: application
 version: 0.1.0
 appVersion: "0.1.0"
+dependencies:
+  - condition: crds.enabled
+    name: lifecycle-crds
+    repository: file://./charts/lifecycle-crds
+    version: 0.1.0

@@ -84,3 +84,6 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+crds:
+  enabled: true
