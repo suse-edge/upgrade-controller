@@ -40,7 +40,7 @@ executeUpgrade(){
         EXEC_START_PRE_RPM_IMPORT="ExecStartPre=/usr/sbin/transactional-update --continue run rpm --import {{.RepoGPGKey}}"
         EXEC_START_PRE_LINES=$(echo -e "${EXEC_START_PRE_PKG_UPGRADE}\n${EXEC_START_PRE_RPM_IMPORT}")
 
-        EXEC_START="/usr/sbin/transactional-update --continue run zypper migration --non-interactive --product {{.ZypperID}}/{{.Version}}/${SYSTEM_ARCH} --root /"
+        EXEC_START="/usr/sbin/transactional-update --continue run zypper migration --gpg-auto-import-keys --non-interactive --product {{.ZypperID}}/{{.Version}}/${SYSTEM_ARCH} --root /"
         SERVICE_NAME="os-migration.service"
     fi
 
