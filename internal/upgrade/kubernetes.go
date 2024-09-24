@@ -85,7 +85,7 @@ func KubernetesWorkerPlan(nameSuffix, version string, drain bool, annotations ma
 	workerPlan.Labels = map[string]string{
 		"k8s-upgrade": "worker",
 	}
-	workerPlan.Spec.Concurrency = 2
+	workerPlan.Spec.Concurrency = 1
 	workerPlan.Spec.NodeSelector = &metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
 			{

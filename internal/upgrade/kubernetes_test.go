@@ -171,7 +171,7 @@ func TestKubernetesWorkerPlan_RKE2(t *testing.T) {
 	assert.Empty(t, upgradeContainer.Args)
 
 	assert.Equal(t, version, upgradePlan.Spec.Version)
-	assert.EqualValues(t, 2, upgradePlan.Spec.Concurrency)
+	assert.EqualValues(t, 1, upgradePlan.Spec.Concurrency)
 	assert.True(t, upgradePlan.Spec.Cordon)
 
 	assert.Equal(t, "system-upgrade-controller", upgradePlan.Spec.ServiceAccountName)
@@ -219,7 +219,7 @@ func TestKubernetesWorkerPlan_K3s(t *testing.T) {
 	assert.Empty(t, upgradeContainer.Args)
 
 	assert.Equal(t, version, upgradePlan.Spec.Version)
-	assert.EqualValues(t, 2, upgradePlan.Spec.Concurrency)
+	assert.EqualValues(t, 1, upgradePlan.Spec.Concurrency)
 	assert.True(t, upgradePlan.Spec.Cordon)
 
 	assert.Equal(t, "system-upgrade-controller", upgradePlan.Spec.ServiceAccountName)
