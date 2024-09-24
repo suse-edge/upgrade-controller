@@ -16,10 +16,9 @@ const (
 
 func TestOSUpgradeSecret(t *testing.T) {
 	os := &lifecyclev1alpha1.OperatingSystem{
-		Version:     "6.0",
-		ZypperID:    "SL-Micro",
-		CPEScheme:   "some-cpe-scheme",
-		RepoGPGPath: "some-gpg-path",
+		Version:   "6.0",
+		ZypperID:  "SL-Micro",
+		CPEScheme: "some-cpe-scheme",
 	}
 	annotations := map[string]string{
 		"lifecycle.suse.com/x": "z",
@@ -42,8 +41,7 @@ func TestOSUpgradeSecret(t *testing.T) {
 	require.NotEmpty(t, scriptContents)
 
 	assert.Contains(t, scriptContents, "RELEASE_CPE=some-cpe-scheme")
-	assert.Contains(t, scriptContents, "/usr/sbin/transactional-update --continue run rpm --import some-gpg-path")
-	assert.Contains(t, scriptContents, "/usr/sbin/transactional-update --continue run zypper migration --non-interactive --product SL-Micro/6.0/${SYSTEM_ARCH} --root /")
+	assert.Contains(t, scriptContents, "/usr/sbin/transactional-update --continue run zypper migration --gpg-auto-import-keys --non-interactive --product SL-Micro/6.0/${SYSTEM_ARCH} --root /")
 }
 
 func TestOSControlPlanePlan(t *testing.T) {
