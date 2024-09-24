@@ -100,10 +100,9 @@ type KubernetesDistribution struct {
 }
 
 type OperatingSystem struct {
-	Version     string `json:"version"`
-	ZypperID    string `json:"zypperID"`
-	CPEScheme   string `json:"cpeScheme"`
-	RepoGPGPath string `json:"repoGPGPath"`
+	Version   string `json:"version"`
+	ZypperID  string `json:"zypperID"`
+	CPEScheme string `json:"cpeScheme"`
 	// +kubebuilder:validation:MinItems=1
 	SupportedArchs []Arch `json:"supportedArchs"`
 	PrettyName     string `json:"prettyName"`

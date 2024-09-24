@@ -65,8 +65,6 @@ spec:
                           type: string
                         prettyName:
                           type: string
-                        repoGPGPath:
-                          type: string
                         supportedArchs:
                           items:
                             enum:
@@ -82,7 +80,6 @@ spec:
                       required:
                         - cpeScheme
                         - prettyName
-                        - repoGPGPath
                         - supportedArchs
                         - version
                         - zypperID

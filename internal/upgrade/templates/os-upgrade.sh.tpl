@@ -26,21 +26,18 @@ executeUpgrade(){
     CURRENT_CPE=`cat /etc/os-release | grep -w CPE_NAME | cut -d "=" -f 2 | tr -d '"'`
 
     SYSTEM_ARCH=`arch`
-    # Lines that will be appended to the systemd.service 'ExecStartPre' configuration
-    EXEC_START_PRE_LINES=""
 
     # Determine whether this is a package update or a migration
     if [ "${RELEASE_CPE}" == "${CURRENT_CPE}" ]; then
         # Package update if both CPEs are the same
-        EXEC_START="/usr/sbin/transactional-update cleanup up"
+        EXEC_START="ExecStart=/usr/sbin/transactional-update cleanup up"
         SERVICE_NAME="os-pkg-update.service"
     else
         # Migration if the CPEs are different
-        EXEC_START_PRE_PKG_UPGRADE="ExecStartPre=/usr/sbin/transactional-update cleanup up"
-        EXEC_START_PRE_RPM_IMPORT="ExecStartPre=/usr/sbin/transactional-update --continue run rpm --import {{.RepoGPGKey}}"
-        EXEC_START_PRE_LINES=$(echo -e "${EXEC_START_PRE_PKG_UPGRADE}\n${EXEC_START_PRE_RPM_IMPORT}")
+        PKG_UPDATE_CMD="ExecStart=/usr/sbin/transactional-update cleanup up"
+        MIGRATION_CMD="ExecStart=/usr/sbin/transactional-update --continue run zypper migration --gpg-auto-import-keys --non-interactive --product {{.ZypperID}}/{{.Version}}/${SYSTEM_ARCH} --root /"
 
-        EXEC_START="/usr/sbin/transactional-update --continue run zypper migration --non-interactive --product {{.ZypperID}}/{{.Version}}/${SYSTEM_ARCH} --root /"
+        EXEC_START=$(echo -e "${PKG_UPDATE_CMD}\n${MIGRATION_CMD}")
         SERVICE_NAME="os-migration.service"
     fi
 
@@ -60,10 +57,9 @@ After=network.target
 
 [Service]
 Type=oneshot
-${EXEC_START_PRE_LINES:+$EXEC_START_PRE_LINES
-}ExecStart=${EXEC_START}
 IOSchedulingClass=best-effort
 IOSchedulingPriority=7
+${EXEC_START}
 EOF
 
     echo "Starting ${SERVICE_NAME}..."
