@@ -1,8 +1,9 @@
-# upgrade-controller
-// TODO(user): Add simple overview of use/purpose
+# Upgrade Controller
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+A Kubernetes controller capable of performing infrastructure platform upgrades consisting of:
+* Operating System (SL Micro)
+* Kubernetes (k3s & RKE2)
+* Additional components (Rancher, Elemental, NeuVector, etc.)
 
 ## Getting Started
 
