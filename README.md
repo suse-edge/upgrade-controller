@@ -1,114 +1,79 @@
-# upgrade-controller
-// TODO(user): Add simple overview of use/purpose
+# Upgrade Controller
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+A Kubernetes controller capable of performing infrastructure platform upgrades consisting of:
+* Operating System (SL Micro)
+* Kubernetes (k3s & RKE2)
+* Additional components (Rancher, Elemental, NeuVector, etc.)
 
-## Getting Started
+## Requirements
 
-### Prerequisites
-- go version v1.22.0+
-- docker version 17.03+.
-- kubectl version v1.11.3+.
-- Access to a Kubernetes v1.11.3+ cluster.
+### System Upgrade Controller
 
-### To Deploy on the cluster
-**Build and push your image to the location specified by `IMG`:**
+The Upgrade Controller utilizes the [System Upgrade Controller](https://github.com/rancher/system-upgrade-controller)
+to perform OS and Kubernetes upgrades. Ensure that it is installed on the cluster e.g. via the respective
+[Helm chart](https://github.com/rancher/charts/tree/release-v2.9/charts/system-upgrade-controller/104.0.0%2Bup0.7.0).
 
-```sh
-make docker-build docker-push IMG=<some-registry>/upgrade-controller:tag
+OS upgrades consist of both package updates within the same OS version (e.g. SL Micro 6.0) and migration to later versions
+(e.g. SL Micro 6.0 -> SL Micro 6.1).
+
+Kubernetes upgrades are generally advised to never skip a minor version (e.g. 1.28 -> 1.30). Proceed with caution
+as such scenarios are not prevented by the Upgrade Controller and may lead to unexpected behaviour.
+
+### Helm Controller
+
+Additional components installed on the cluster via Helm charts are being upgraded by the
+[Helm Controller](https://github.com/k3s-io/helm-controller). Both k3s and RKE2 clusters have this controller
+built-in. It is enabled by default and users of the Upgrade Controller should ensure that it is not manually
+disabled via the respective CLI argument or config file parameter.
+
+## Workflow
+
+The Upgrade Controller reconciles **UpgradePlan** resources. These follow a very simple definition:
+
+```yaml
+apiVersion: lifecycle.suse.com/v1alpha1
+kind: UpgradePlan
+metadata:
+  name: upgrade-plan-3-1-0
+  namespace: upgrade-controller-system
+spec:
+  releaseVersion: 3.1.0
 ```
 
-**NOTE:** This image ought to be published in the personal registry you specified.
-And it is required to have access to pull the image from the working environment.
-Make sure you have the proper permission to the registry if the above commands don’t work.
+While there are few additional fields which can influence how the different upgrades are performed,
+none of those are mandatory.
 
-**Install the CRDs into the cluster:**
+The most important field is `releaseVersion` which maps to a **ReleaseManifest** resource.
+This resource contains the information necessary for all the different components (OS, Kubernetes, etc.).
 
-```sh
-make install
-```
+The Upgrade Controller will look for such **ReleaseManifest** on the cluster. If it is present, it will be used.
+If not, it will be pulled from a container image source (which is configurable).
 
-**Deploy the Manager to the cluster with the image specified by `IMG`:**
+Once the release manifest is fetched, the Upgrade Controller will start the execution of the plan.
 
-```sh
-make deploy IMG=<some-registry>/upgrade-controller:tag
-```
+It will go through the following stages:
 
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
-privileges or be logged in as admin.
+**1. OS upgrade**
 
-**Create instances of your solution**
-You can apply the samples (examples) from the config/sample:
+OS upgrades will be executed on the control plane first, and on the worker nodes second.
+Each upgrade is happening one node at a time, and each node will be handled individually i.e.
+one node may have some installed packages on newer or older versions than the others,
+however the upgrade process will bring them to the same state.
 
-```sh
-kubectl apply -k config/samples/
-```
+**2. Kubernetes upgrade**
 
->**NOTE**: Ensure that the samples has default values to test it out.
+Similarly to the OS upgrades, Kubernetes upgrades follow the control plane first approach
+and all nodes are also being upgraded one at a time.
 
-### To Uninstall
-**Delete the instances (CRs) from the cluster:**
+**3. Additional components upgrade**
 
-```sh
-kubectl delete -k config/samples/
-```
+Currently, all additional components are installed via Helm charts. Some of those have dependencies (e.g. CRD charts)
+or add-ons (e.g. Rancher dashboard extensions). The upgrades will follow the order of the component list within the release manifest.
+Each Helm component upgrade may receive additional values coming from either the release manifest or the upgrade plan, or both.
 
-**Delete the APIs(CRDs) from the cluster:**
+Once the upgrade plan goes through all of these stages, it is considered finished. Refer to its status for the information about each step.
 
-```sh
-make uninstall
-```
+## Development
 
-**UnDeploy the controller from the cluster:**
-
-```sh
-make undeploy
-```
-
-## Project Distribution
-
-Following are the steps to build the installer and distribute this project to users.
-
-1. Build the installer for the image built and published in the registry:
-
-```sh
-make build-installer IMG=<some-registry>/upgrade-controller:tag
-```
-
-NOTE: The makefile target mentioned above generates an 'install.yaml'
-file in the dist directory. This file contains all the resources built
-with Kustomize, which are necessary to install this project without
-its dependencies.
-
-2. Using the installer
-
-Users can just run kubectl apply -f <URL for YAML BUNDLE> to install the project, i.e.:
-
-```sh
-kubectl apply -f https://raw.githubusercontent.com/<org>/upgrade-controller/<tag or branch>/dist/install.yaml
-```
-
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
-
-**NOTE:** Run `make help` for more information on all potential `make` targets
-
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
-
-## License
-
-Copyright 2024.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
+In case you'd want to contribute to the project, follow the [Development Guide](docs/development.md) in order
+to find out how to build, deploy and test the Upgrade Controller in your own environment.
