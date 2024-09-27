@@ -11,7 +11,10 @@ Use the following diagram to familiarize yourself with the internals around the 
 - Go version v1.22.0+
 - Docker version 17.03+.
 - kubectl version v1.28+.
-- Access to a Kubernetes v1.30+ cluster.
+- Access to a Kubernetes v1.30+ cluster running:
+  - cert-manager
+  - Helm Controller
+  - System Upgrade Controller (v0.13.4+)
 
 ## How to deploy?
 
