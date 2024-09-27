@@ -1,5 +1,12 @@
 # Development guide
 
+## Workflow
+
+The [README](../README.md#workflow) briefly touches on how the upgrades are executed.
+
+Use the following diagram to familiarize yourself with the internals around the process.
+![workflow](workflow-diagram.png)
+
 ## Prerequisites
 - Go version v1.22.0+
 - Docker version 17.03+.
