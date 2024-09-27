@@ -72,3 +72,8 @@ or add-ons (e.g. Rancher dashboard extensions). The upgrades will follow the ord
 Each Helm component upgrade may receive additional values coming from either the release manifest or the upgrade plan, or both.
 
 Once the upgrade plan goes through all of these stages, it is considered finished. Refer to its status for the information about each step.
+
+## Development
+
+In case you'd want to contribute to the project, follow the [Development Guide](docs/development.md) in order
+to find out how to build, deploy and test the Upgrade Controller in your own environment.
