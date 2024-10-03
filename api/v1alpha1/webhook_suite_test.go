@@ -113,7 +113,10 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	err = (&UpgradePlan{}).SetupWebhookWithManager(mgr)
+	err = ctrl.NewWebhookManagedBy(mgr).
+		WithValidator(&UpgradePlanValidator{}).
+		For(&UpgradePlan{}).
+		Complete()
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:webhook
