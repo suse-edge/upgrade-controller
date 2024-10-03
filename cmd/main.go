@@ -190,10 +190,7 @@ func main() {
 		os.Exit(1)
 	}
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err = ctrl.NewWebhookManagedBy(mgr).
-			For(&lifecyclev1alpha1.UpgradePlan{}).
-			WithValidator(&lifecyclev1alpha1.UpgradePlanValidator{}).
-			Complete(); err != nil {
+		if err = lifecyclev1alpha1.SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "UpgradePlan")
 			os.Exit(1)
 		}
