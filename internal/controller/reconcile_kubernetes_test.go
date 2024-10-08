@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,139 +10,175 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 )
+
+func TestFindMatchingNodes(t *testing.T) {
+	nodeLabels := map[string]string{
+		"node-x": "z",
+	}
+	nodeSelector := &metav1.LabelSelector{
+		MatchLabels: nodeLabels,
+	}
+
+	tests := []struct {
+		name          string
+		nodeList      *corev1.NodeList
+		expectedNodes []string
+		expectedErr   string
+	}{
+		{
+			name: "All nodes match",
+			nodeList: &corev1.NodeList{
+				Items: []corev1.Node{
+					{ObjectMeta: metav1.ObjectMeta{Name: "node-1", Labels: nodeLabels}},
+					{ObjectMeta: metav1.ObjectMeta{Name: "node-2", Labels: nodeLabels}},
+					{ObjectMeta: metav1.ObjectMeta{Name: "node-3", Labels: nodeLabels}},
+				},
+			},
+			expectedNodes: []string{"node-1", "node-2", "node-3"},
+		},
+		{
+			name: "Some nodes match",
+			nodeList: &corev1.NodeList{
+				Items: []corev1.Node{
+					{ObjectMeta: metav1.ObjectMeta{Name: "node-1", Labels: nodeLabels}},
+					{ObjectMeta: metav1.ObjectMeta{Name: "node-2"}},
+					{ObjectMeta: metav1.ObjectMeta{Name: "node-3", Labels: nodeLabels}},
+				},
+			},
+			expectedNodes: []string{"node-1", "node-3"},
+		},
+		{
+			name: "No nodes match",
+			nodeList: &corev1.NodeList{
+				Items: []corev1.Node{
+					{ObjectMeta: metav1.ObjectMeta{Name: "node-1"}},
+					{ObjectMeta: metav1.ObjectMeta{Name: "node-2"}},
+					{ObjectMeta: metav1.ObjectMeta{Name: "node-3"}},
+				},
+			},
+			expectedErr: "none of the nodes match label selector: MatchLabels: map[node-x:z], MatchExpressions: []",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			nodes, err := findMatchingNodes(test.nodeList, nodeSelector)
+			if test.expectedErr != "" {
+				require.EqualError(t, err, test.expectedErr)
+				assert.Nil(t, nodes)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Len(t, nodes, len(test.expectedNodes))
+			for _, expected := range test.expectedNodes {
+				assert.True(t, slices.ContainsFunc(nodes, func(actual corev1.Node) bool {
+					return actual.Name == expected
+				}))
+			}
+		})
+	}
+}
 
 func TestIsKubernetesUpgraded(t *testing.T) {
 	const kubernetesVersion = "v1.30.3+k3s1"
 
-	nodeLabels := map[string]string{
-		"node-x": "z",
-	}
-
 	tests := []struct {
 		name            string
-		nodes           *corev1.NodeList
-		selector        labels.Selector
+		nodes           []corev1.Node
 		expectedUpgrade bool
 	}{
 		{
-			name: "All matching nodes upgraded",
-			nodes: &corev1.NodeList{
-				Items: []corev1.Node{
-					{
-						ObjectMeta: metav1.ObjectMeta{Labels: nodeLabels},
-						Spec:       corev1.NodeSpec{Unschedulable: false},
-						Status: corev1.NodeStatus{
-							Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
-							NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{Labels: nodeLabels},
-						Spec:       corev1.NodeSpec{Unschedulable: false},
-						Status: corev1.NodeStatus{
-							Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
-							NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
-					},
-					{
-						Status: corev1.NodeStatus{
-							Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
-							NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.28.12+k3s1"}},
-					},
+			name: "All nodes upgraded",
+			nodes: []corev1.Node{
+				{
+					Status: corev1.NodeStatus{
+						Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
+						NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
+				},
+				{
+					Status: corev1.NodeStatus{
+						Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
+						NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
+				},
+				{
+					Status: corev1.NodeStatus{
+						Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
+						NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
 				},
 			},
-			selector:        labels.SelectorFromSet(nodeLabels),
 			expectedUpgrade: true,
 		},
 		{
-			name: "Unschedulable matching node",
-			nodes: &corev1.NodeList{
-				Items: []corev1.Node{
-					{
-						ObjectMeta: metav1.ObjectMeta{Labels: nodeLabels},
-						Spec:       corev1.NodeSpec{Unschedulable: true},
-						Status: corev1.NodeStatus{
-							Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
-							NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{Labels: nodeLabels},
-						Spec:       corev1.NodeSpec{Unschedulable: false},
-						Status: corev1.NodeStatus{
-							Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
-							NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
-					},
-					{
-						Status: corev1.NodeStatus{
-							Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
-							NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.28.12+k3s1"}},
-					},
+			name: "Unschedulable node",
+			nodes: []corev1.Node{
+				{
+					Spec: corev1.NodeSpec{Unschedulable: true},
+					Status: corev1.NodeStatus{
+						Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
+						NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
+				},
+				{
+					Status: corev1.NodeStatus{
+						Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
+						NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
+				},
+				{
+					Status: corev1.NodeStatus{
+						Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
+						NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
 				},
 			},
-			selector:        labels.SelectorFromSet(nodeLabels),
 			expectedUpgrade: false,
 		},
 		{
-			name: "Not ready matching node",
-			nodes: &corev1.NodeList{
-				Items: []corev1.Node{
-					{
-						ObjectMeta: metav1.ObjectMeta{Labels: nodeLabels},
-						Spec:       corev1.NodeSpec{Unschedulable: false},
-						Status: corev1.NodeStatus{
-							Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionFalse}},
-							NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{Labels: nodeLabels},
-						Spec:       corev1.NodeSpec{Unschedulable: false},
-						Status: corev1.NodeStatus{
-							Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
-							NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
-					},
-					{
-						Status: corev1.NodeStatus{
-							Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
-							NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.28.12+k3s1"}},
-					},
+			name: "Not ready node",
+			nodes: []corev1.Node{
+				{
+					Status: corev1.NodeStatus{
+						Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionFalse}},
+						NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
+				},
+				{
+					Status: corev1.NodeStatus{
+						Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
+						NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
+				},
+				{
+					Status: corev1.NodeStatus{
+						Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
+						NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
 				},
 			},
-			selector:        labels.SelectorFromSet(nodeLabels),
 			expectedUpgrade: false,
 		},
 		{
-			name: "Matching node on older Kubernetes version",
-			nodes: &corev1.NodeList{
-				Items: []corev1.Node{
-					{
-						ObjectMeta: metav1.ObjectMeta{Labels: nodeLabels},
-						Spec:       corev1.NodeSpec{Unschedulable: false},
-						Status: corev1.NodeStatus{
-							Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
-							NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.28.12+k3s1"}},
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{Labels: nodeLabels},
-						Spec:       corev1.NodeSpec{Unschedulable: false},
-						Status: corev1.NodeStatus{
-							Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
-							NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
-					},
-					{
-						Status: corev1.NodeStatus{
-							Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
-							NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.28.12+k3s1"}},
-					},
+			name: "Node on older Kubernetes version",
+			nodes: []corev1.Node{
+				{
+					Status: corev1.NodeStatus{
+						Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
+						NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.28.12+k3s1"}},
+				},
+				{
+					Status: corev1.NodeStatus{
+						Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
+						NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.30.3+k3s1"}},
+				},
+				{
+					Status: corev1.NodeStatus{
+						Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
+						NodeInfo:   corev1.NodeSystemInfo{KubeletVersion: "v1.28.12+k3s1"}},
 				},
 			},
-			selector:        labels.SelectorFromSet(nodeLabels),
 			expectedUpgrade: false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expectedUpgrade, isKubernetesUpgraded(test.nodes, test.selector, kubernetesVersion))
+			assert.Equal(t, test.expectedUpgrade, isKubernetesUpgraded(test.nodes, kubernetesVersion))
 		})
 	}
 }

@@ -43,12 +43,12 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(
 		return ctrl.Result{}, r.createObject(ctx, upgradePlan, controlPlanePlan)
 	}
 
-	selector, err := metav1.LabelSelectorAsSelector(controlPlanePlan.Spec.NodeSelector)
+	nodes, err := findMatchingNodes(nodeList, controlPlanePlan.Spec.NodeSelector)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("parsing node selector: %w", err)
+		return ctrl.Result{}, err
 	}
 
-	if !isKubernetesUpgraded(nodeList, selector, kubernetesVersion) {
+	if !isKubernetesUpgraded(nodes, kubernetesVersion) {
 		setInProgressCondition(upgradePlan, conditionType, "Control plane nodes are being upgraded")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	} else if controlPlaneOnlyCluster(nodeList) {
@@ -66,12 +66,12 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(
 		return ctrl.Result{}, r.createObject(ctx, upgradePlan, workerPlan)
 	}
 
-	selector, err = metav1.LabelSelectorAsSelector(workerPlan.Spec.NodeSelector)
+	nodes, err = findMatchingNodes(nodeList, workerPlan.Spec.NodeSelector)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("parsing node selector: %w", err)
+		return ctrl.Result{}, err
 	}
 
-	if !isKubernetesUpgraded(nodeList, selector, kubernetesVersion) {
+	if !isKubernetesUpgraded(nodes, kubernetesVersion) {
 		setInProgressCondition(upgradePlan, conditionType, "Worker nodes are being upgraded")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
@@ -97,12 +97,30 @@ func targetKubernetesVersion(nodeList *corev1.NodeList, kubernetes *lifecyclev1a
 	}
 }
 
-func isKubernetesUpgraded(nodeList *corev1.NodeList, selector labels.Selector, kubernetesVersion string) bool {
-	for _, node := range nodeList.Items {
-		if !selector.Matches(labels.Set(node.Labels)) {
-			continue
-		}
+func findMatchingNodes(nodeList *corev1.NodeList, nodeSelector *metav1.LabelSelector) ([]corev1.Node, error) {
+	selector, err := metav1.LabelSelectorAsSelector(nodeSelector)
+	if err != nil {
+		return nil, fmt.Errorf("parsing node selector: %w", err)
+	}
 
+	var targetNodes []corev1.Node
+
+	for _, node := range nodeList.Items {
+		if selector.Matches(labels.Set(node.Labels)) {
+			targetNodes = append(targetNodes, node)
+		}
+	}
+
+	if len(targetNodes) == 0 {
+		return nil, fmt.Errorf("none of the nodes match label selector: MatchLabels: %s, MatchExpressions: %s",
+			nodeSelector.MatchLabels, nodeSelector.MatchExpressions)
+	}
+
+	return targetNodes, nil
+}
+
+func isKubernetesUpgraded(nodes []corev1.Node, kubernetesVersion string) bool {
+	for _, node := range nodes {
 		var nodeReadyStatus corev1.ConditionStatus
 
 		for _, condition := range node.Status.Conditions {
