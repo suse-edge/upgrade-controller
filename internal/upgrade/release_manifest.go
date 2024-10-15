@@ -18,7 +18,7 @@ func (image ContainerImage) String() string {
 	return fmt.Sprintf("%s:%s", image.Name, image.Version)
 }
 
-func ReleaseManifestInstallJob(releaseManifest, kubectl ContainerImage, serviceAccount, namespace string, annotations map[string]string) (*batchv1.Job, error) {
+func ReleaseManifestInstallJob(releaseManifest, kubectl ContainerImage, serviceAccount, namespace string, labels map[string]string) (*batchv1.Job, error) {
 	if releaseManifest.Name == "" {
 		return nil, fmt.Errorf("release manifest image is empty")
 	} else if releaseManifest.Version == "" {
@@ -40,9 +40,9 @@ func ReleaseManifestInstallJob(releaseManifest, kubectl ContainerImage, serviceA
 			Kind:       "Job",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        workloadName,
-			Namespace:   namespace,
-			Annotations: annotations,
+			Name:      workloadName,
+			Namespace: namespace,
+			Labels:    labels,
 		},
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{

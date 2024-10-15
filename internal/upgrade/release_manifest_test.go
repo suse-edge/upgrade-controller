@@ -18,11 +18,11 @@ func TestReleaseManifestInstallJob(t *testing.T) {
 	}
 	serviceAccount := "upgrade-controller-sa"
 	namespace := "upgrade-controller-ns"
-	annotations := map[string]string{
+	labels := map[string]string{
 		"lifecycle.suse.com/x": "z",
 	}
 
-	job, err := ReleaseManifestInstallJob(releaseManifest, kubectl, serviceAccount, namespace, annotations)
+	job, err := ReleaseManifestInstallJob(releaseManifest, kubectl, serviceAccount, namespace, labels)
 	require.NoError(t, err)
 
 	assert.Equal(t, "batch/v1", job.TypeMeta.APIVersion)
@@ -30,8 +30,8 @@ func TestReleaseManifestInstallJob(t *testing.T) {
 
 	assert.Equal(t, "apply-release-manifest-3-1-0", job.ObjectMeta.Name)
 	assert.Equal(t, "upgrade-controller-ns", job.ObjectMeta.Namespace)
-	require.Len(t, job.ObjectMeta.Annotations, 1)
-	assert.Equal(t, annotations, job.ObjectMeta.Annotations)
+	require.Len(t, job.ObjectMeta.Labels, 1)
+	assert.Equal(t, labels, job.ObjectMeta.Labels)
 
 	assert.Equal(t, "apply-release-manifest-3-1-0", job.Spec.Template.ObjectMeta.Name)
 	assert.Equal(t, "upgrade-controller-ns", job.Spec.Template.ObjectMeta.Namespace)
@@ -70,12 +70,12 @@ func TestReleaseManifestInstallJob(t *testing.T) {
 	ttl := int32(0)
 	assert.Equal(t, &ttl, job.Spec.TTLSecondsAfterFinished)
 
-	job, err = ReleaseManifestInstallJob(ContainerImage{Version: "3.1.0"}, kubectl, serviceAccount, namespace, annotations)
+	job, err = ReleaseManifestInstallJob(ContainerImage{Version: "3.1.0"}, kubectl, serviceAccount, namespace, labels)
 	require.Error(t, err)
 	assert.EqualError(t, err, "release manifest image is empty")
 	assert.Nil(t, job)
 
-	job, err = ReleaseManifestInstallJob(ContainerImage{Name: "registry.suse.com/edge/release-manifest"}, kubectl, serviceAccount, namespace, annotations)
+	job, err = ReleaseManifestInstallJob(ContainerImage{Name: "registry.suse.com/edge/release-manifest"}, kubectl, serviceAccount, namespace, labels)
 	require.Error(t, err)
 	assert.EqualError(t, err, "release manifest version is empty")
 	assert.Nil(t, job)

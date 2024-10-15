@@ -10,11 +10,16 @@ import (
 
 func TestKubernetesControlPlanePlan_RKE2(t *testing.T) {
 	version := "v1.30.2+rke2r1"
-	annotations := map[string]string{
+	addLabels := map[string]string{
 		"lifecycle.suse.com/x": "z",
 	}
 
-	upgradePlan := KubernetesControlPlanePlan(planNameSuffix, version, false, annotations)
+	expectedLabels := map[string]string{
+		"lifecycle.suse.com/x": "z",
+		"k8s-upgrade":          "control-plane",
+	}
+
+	upgradePlan := KubernetesControlPlanePlan(planNameSuffix, version, false, addLabels)
 	require.NotNil(t, upgradePlan)
 
 	assert.Equal(t, "Plan", upgradePlan.TypeMeta.Kind)
@@ -22,9 +27,7 @@ func TestKubernetesControlPlanePlan_RKE2(t *testing.T) {
 
 	assert.Equal(t, "control-plane-v1-30-2-rke2r1-abcdef", upgradePlan.ObjectMeta.Name)
 	assert.Equal(t, "cattle-system", upgradePlan.ObjectMeta.Namespace)
-	assert.Equal(t, annotations, upgradePlan.ObjectMeta.Annotations)
-	require.Len(t, upgradePlan.ObjectMeta.Labels, 1)
-	assert.Equal(t, "control-plane", upgradePlan.ObjectMeta.Labels["k8s-upgrade"])
+	assert.Equal(t, expectedLabels, upgradePlan.ObjectMeta.Labels)
 
 	require.Len(t, upgradePlan.Spec.NodeSelector.MatchLabels, 0)
 	require.Len(t, upgradePlan.Spec.NodeSelector.MatchExpressions, 1)
@@ -72,11 +75,16 @@ func TestKubernetesControlPlanePlan_RKE2(t *testing.T) {
 
 func TestKubernetesControlPlanePlan_K3s(t *testing.T) {
 	version := "v1.30.2+k3s1"
-	annotations := map[string]string{
+	addLabels := map[string]string{
 		"lifecycle.suse.com/x": "z",
 	}
 
-	upgradePlan := KubernetesControlPlanePlan(planNameSuffix, version, false, annotations)
+	expectedLabels := map[string]string{
+		"lifecycle.suse.com/x": "z",
+		"k8s-upgrade":          "control-plane",
+	}
+
+	upgradePlan := KubernetesControlPlanePlan(planNameSuffix, version, false, addLabels)
 	require.NotNil(t, upgradePlan)
 
 	assert.Equal(t, "Plan", upgradePlan.TypeMeta.Kind)
@@ -84,9 +92,7 @@ func TestKubernetesControlPlanePlan_K3s(t *testing.T) {
 
 	assert.Equal(t, "control-plane-v1-30-2-k3s1-abcdef", upgradePlan.ObjectMeta.Name)
 	assert.Equal(t, "cattle-system", upgradePlan.ObjectMeta.Namespace)
-	assert.Equal(t, annotations, upgradePlan.ObjectMeta.Annotations)
-	require.Len(t, upgradePlan.ObjectMeta.Labels, 1)
-	assert.Equal(t, "control-plane", upgradePlan.ObjectMeta.Labels["k8s-upgrade"])
+	assert.Equal(t, expectedLabels, upgradePlan.ObjectMeta.Labels)
 
 	require.Len(t, upgradePlan.Spec.NodeSelector.MatchLabels, 0)
 	require.Len(t, upgradePlan.Spec.NodeSelector.MatchExpressions, 1)
@@ -134,11 +140,16 @@ func TestKubernetesControlPlanePlan_K3s(t *testing.T) {
 
 func TestKubernetesWorkerPlan_RKE2(t *testing.T) {
 	version := "v1.30.2+rke2r1"
-	annotations := map[string]string{
+	addLabels := map[string]string{
 		"lifecycle.suse.com/x": "z",
 	}
 
-	upgradePlan := KubernetesWorkerPlan(planNameSuffix, version, false, annotations)
+	expectedLabels := map[string]string{
+		"lifecycle.suse.com/x": "z",
+		"k8s-upgrade":          "worker",
+	}
+
+	upgradePlan := KubernetesWorkerPlan(planNameSuffix, version, false, addLabels)
 	require.NotNil(t, upgradePlan)
 
 	assert.Equal(t, "Plan", upgradePlan.TypeMeta.Kind)
@@ -146,9 +157,7 @@ func TestKubernetesWorkerPlan_RKE2(t *testing.T) {
 
 	assert.Equal(t, "workers-v1-30-2-rke2r1-abcdef", upgradePlan.ObjectMeta.Name)
 	assert.Equal(t, "cattle-system", upgradePlan.ObjectMeta.Namespace)
-	assert.Equal(t, annotations, upgradePlan.ObjectMeta.Annotations)
-	require.Len(t, upgradePlan.ObjectMeta.Labels, 1)
-	assert.Equal(t, "worker", upgradePlan.ObjectMeta.Labels["k8s-upgrade"])
+	assert.Equal(t, expectedLabels, upgradePlan.ObjectMeta.Labels)
 
 	require.Len(t, upgradePlan.Spec.NodeSelector.MatchLabels, 0)
 	require.Len(t, upgradePlan.Spec.NodeSelector.MatchExpressions, 1)
@@ -182,11 +191,16 @@ func TestKubernetesWorkerPlan_RKE2(t *testing.T) {
 
 func TestKubernetesWorkerPlan_K3s(t *testing.T) {
 	version := "v1.30.2+k3s1"
-	annotations := map[string]string{
+	addLabels := map[string]string{
 		"lifecycle.suse.com/x": "z",
 	}
 
-	upgradePlan := KubernetesWorkerPlan(planNameSuffix, version, false, annotations)
+	expectedLabels := map[string]string{
+		"lifecycle.suse.com/x": "z",
+		"k8s-upgrade":          "worker",
+	}
+
+	upgradePlan := KubernetesWorkerPlan(planNameSuffix, version, false, addLabels)
 	require.NotNil(t, upgradePlan)
 
 	assert.Equal(t, "Plan", upgradePlan.TypeMeta.Kind)
@@ -194,9 +208,7 @@ func TestKubernetesWorkerPlan_K3s(t *testing.T) {
 
 	assert.Equal(t, "workers-v1-30-2-k3s1-abcdef", upgradePlan.ObjectMeta.Name)
 	assert.Equal(t, "cattle-system", upgradePlan.ObjectMeta.Namespace)
-	assert.Equal(t, annotations, upgradePlan.ObjectMeta.Annotations)
-	require.Len(t, upgradePlan.ObjectMeta.Labels, 1)
-	assert.Equal(t, "worker", upgradePlan.ObjectMeta.Labels["k8s-upgrade"])
+	assert.Equal(t, expectedLabels, upgradePlan.ObjectMeta.Labels)
 
 	require.Len(t, upgradePlan.Spec.NodeSelector.MatchLabels, 0)
 	require.Len(t, upgradePlan.Spec.NodeSelector.MatchExpressions, 1)

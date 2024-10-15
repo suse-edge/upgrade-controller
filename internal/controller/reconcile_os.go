@@ -20,10 +20,10 @@ func (r *UpgradePlanReconciler) reconcileOS(
 	releaseOS *lifecyclev1alpha1.OperatingSystem,
 	nodeList *corev1.NodeList,
 ) (ctrl.Result, error) {
-	identifierAnnotations := upgrade.PlanIdentifierAnnotations(upgradePlan.Name, upgradePlan.Namespace)
+	identifierLabels := upgrade.PlanIdentifierLabels(upgradePlan.Name, upgradePlan.Namespace)
 	nameSuffix := upgradePlan.Status.SUCNameSuffix
 
-	secret, err := upgrade.OSUpgradeSecret(nameSuffix, releaseOS, identifierAnnotations)
+	secret, err := upgrade.OSUpgradeSecret(nameSuffix, releaseOS, identifierLabels)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("generating OS upgrade secret: %w", err)
 	}
@@ -39,7 +39,7 @@ func (r *UpgradePlanReconciler) reconcileOS(
 	conditionType := lifecyclev1alpha1.OperatingSystemUpgradedCondition
 
 	drainControlPlane, drainWorker := parseDrainOptions(nodeList, upgradePlan)
-	controlPlanePlan := upgrade.OSControlPlanePlan(nameSuffix, releaseVersion, secret.Name, releaseOS, drainControlPlane, identifierAnnotations)
+	controlPlanePlan := upgrade.OSControlPlanePlan(nameSuffix, releaseVersion, secret.Name, releaseOS, drainControlPlane, identifierLabels)
 	if err = r.Get(ctx, client.ObjectKeyFromObject(controlPlanePlan), controlPlanePlan); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
@@ -62,7 +62,7 @@ func (r *UpgradePlanReconciler) reconcileOS(
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	workerPlan := upgrade.OSWorkerPlan(nameSuffix, releaseVersion, secret.Name, releaseOS, drainWorker, identifierAnnotations)
+	workerPlan := upgrade.OSWorkerPlan(nameSuffix, releaseVersion, secret.Name, releaseOS, drainWorker, identifierLabels)
 	if err = r.Get(ctx, client.ObjectKeyFromObject(workerPlan), workerPlan); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
