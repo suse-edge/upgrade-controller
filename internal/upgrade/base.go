@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	PlanNameAnnotation      = "lifecycle.suse.com/upgrade-plan-name"
-	PlanNamespaceAnnotation = "lifecycle.suse.com/upgrade-plan-namespace"
-	ReleaseAnnotation       = "lifecycle.suse.com/release"
+	PlanNameLabel      = "lifecycle.suse.com/upgrade-plan-name"
+	PlanNamespaceLabel = "lifecycle.suse.com/upgrade-plan-namespace"
+
+	ReleaseAnnotation = "lifecycle.suse.com/release"
 
 	ControlPlaneLabel = "node-role.kubernetes.io/control-plane"
 
@@ -27,10 +28,10 @@ const (
 	randomByteNum = 5
 )
 
-func PlanIdentifierAnnotations(name, namespace string) map[string]string {
+func PlanIdentifierLabels(name, namespace string) map[string]string {
 	return map[string]string{
-		PlanNameAnnotation:      name,
-		PlanNamespaceAnnotation: namespace,
+		PlanNameLabel:      name,
+		PlanNamespaceLabel: namespace,
 	}
 }
 
@@ -42,7 +43,7 @@ func GenerateSuffix() (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
-func baseUpgradePlan(name string, drain bool, annotations map[string]string) *upgradecattlev1.Plan {
+func baseUpgradePlan(name string, drain bool, labels map[string]string) *upgradecattlev1.Plan {
 	const (
 		kind               = "Plan"
 		apiVersion         = "upgrade.cattle.io/v1"
@@ -55,9 +56,9 @@ func baseUpgradePlan(name string, drain bool, annotations map[string]string) *up
 			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Namespace:   SUCNamespace,
-			Annotations: annotations,
+			Name:      name,
+			Namespace: SUCNamespace,
+			Labels:    labels,
 		},
 		Spec: upgradecattlev1.PlanSpec{
 			ServiceAccountName: serviceAccountName,

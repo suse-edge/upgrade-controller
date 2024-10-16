@@ -22,7 +22,7 @@ const (
 //go:embed templates/os-upgrade.sh.tpl
 var osUpgradeScript string
 
-func OSUpgradeSecret(nameSuffix string, releaseOS *lifecyclev1alpha1.OperatingSystem, annotations map[string]string) (*corev1.Secret, error) {
+func OSUpgradeSecret(nameSuffix string, releaseOS *lifecyclev1alpha1.OperatingSystem, labels map[string]string) (*corev1.Secret, error) {
 	const (
 		apiVersion = "v1"
 		kind       = "Secret"
@@ -55,9 +55,9 @@ func OSUpgradeSecret(nameSuffix string, releaseOS *lifecyclev1alpha1.OperatingSy
 			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        secretName,
-			Namespace:   SUCNamespace,
-			Annotations: annotations,
+			Name:      secretName,
+			Namespace: SUCNamespace,
+			Labels:    labels,
 		},
 		Type: corev1.SecretTypeOpaque,
 		StringData: map[string]string{
@@ -68,13 +68,11 @@ func OSUpgradeSecret(nameSuffix string, releaseOS *lifecyclev1alpha1.OperatingSy
 	return secret, nil
 }
 
-func OSControlPlanePlan(nameSuffix, releaseVersion, secretName string, releaseOS *lifecyclev1alpha1.OperatingSystem, drain bool, annotations map[string]string) *upgradecattlev1.Plan {
+func OSControlPlanePlan(nameSuffix, releaseVersion, secretName string, releaseOS *lifecyclev1alpha1.OperatingSystem, drain bool, labels map[string]string) *upgradecattlev1.Plan {
 	controlPlanePlanName := osPlanName(controlPlaneKey, releaseOS.ZypperID, releaseOS.Version, nameSuffix)
-	controlPlanePlan := baseOSPlan(controlPlanePlanName, releaseVersion, secretName, drain, annotations)
 
-	controlPlanePlan.Labels = map[string]string{
-		"os-upgrade": "control-plane",
-	}
+	labels["os-upgrade"] = "control-plane"
+	controlPlanePlan := baseOSPlan(controlPlanePlanName, releaseVersion, secretName, drain, labels)
 	controlPlanePlan.Spec.Concurrency = 1
 	controlPlanePlan.Spec.NodeSelector = &metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
@@ -111,14 +109,11 @@ func OSControlPlanePlan(nameSuffix, releaseVersion, secretName string, releaseOS
 	return controlPlanePlan
 }
 
-func OSWorkerPlan(nameSuffix, releaseVersion, secretName string, releaseOS *lifecyclev1alpha1.OperatingSystem, drain bool, annotations map[string]string) *upgradecattlev1.Plan {
+func OSWorkerPlan(nameSuffix, releaseVersion, secretName string, releaseOS *lifecyclev1alpha1.OperatingSystem, drain bool, labels map[string]string) *upgradecattlev1.Plan {
 	workerPlanName := osPlanName(workersKey, releaseOS.ZypperID, releaseOS.Version, nameSuffix)
-	workerPlan := baseOSPlan(workerPlanName, releaseVersion, secretName, drain, annotations)
 
-	workerPlan.Labels = map[string]string{
-		"os-upgrade": "worker",
-	}
-
+	labels["os-upgrade"] = "worker"
+	workerPlan := baseOSPlan(workerPlanName, releaseVersion, secretName, drain, labels)
 	workerPlan.Spec.Concurrency = 2
 	workerPlan.Spec.NodeSelector = &metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
@@ -135,12 +130,12 @@ func OSWorkerPlan(nameSuffix, releaseVersion, secretName string, releaseOS *life
 	return workerPlan
 }
 
-func baseOSPlan(planName, releaseVersion, secretName string, drain bool, annotations map[string]string) *upgradecattlev1.Plan {
+func baseOSPlan(planName, releaseVersion, secretName string, drain bool, labels map[string]string) *upgradecattlev1.Plan {
 	const (
 		planImage = "registry.suse.com/bci/bci-base:15.6"
 	)
 
-	baseOSplan := baseUpgradePlan(planName, drain, annotations)
+	baseOSplan := baseUpgradePlan(planName, drain, labels)
 
 	secretPathRelativeToHost := fmt.Sprintf("/run/system-upgrade/secrets/%s", secretName)
 	mountPath := filepath.Join("/host", secretPathRelativeToHost)

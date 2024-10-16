@@ -34,12 +34,12 @@ func (r *UpgradePlanReconciler) retrieveReleaseManifest(ctx context.Context, upg
 }
 
 func (r *UpgradePlanReconciler) createReleaseManifest(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) error {
-	annotations := upgrade.PlanIdentifierAnnotations(upgradePlan.Name, upgradePlan.Namespace)
+	labels := upgrade.PlanIdentifierLabels(upgradePlan.Name, upgradePlan.Namespace)
 	releaseManifest := upgrade.ContainerImage{
 		Name:    r.ReleaseManifestImage,
 		Version: strings.TrimPrefix(upgradePlan.Spec.ReleaseVersion, "v"),
 	}
-	job, err := upgrade.ReleaseManifestInstallJob(releaseManifest, r.Kubectl, r.ServiceAccount, upgradePlan.Namespace, annotations)
+	job, err := upgrade.ReleaseManifestInstallJob(releaseManifest, r.Kubectl, r.ServiceAccount, upgradePlan.Namespace, labels)
 	if err != nil {
 		return err
 	}
