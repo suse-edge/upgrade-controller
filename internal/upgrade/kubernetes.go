@@ -31,8 +31,8 @@ func KubernetesControlPlanePlan(nameSuffix, version string, drain bool, labels m
 	controlPlanePlanName := kubernetesPlanName(controlPlaneKey, version, nameSuffix)
 	upgradeImage := kubernetesUpgradeImage(version)
 
+	labels["k8s-upgrade"] = "control-plane"
 	controlPlanePlan := baseUpgradePlan(controlPlanePlanName, drain, labels)
-	controlPlanePlan.Labels["k8s-upgrade"] = "control-plane"
 	controlPlanePlan.Spec.NodeSelector = &metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
 			{
@@ -79,8 +79,8 @@ func KubernetesWorkerPlan(nameSuffix, version string, drain bool, labels map[str
 	workerPlanName := kubernetesPlanName(workersKey, version, nameSuffix)
 	upgradeImage := kubernetesUpgradeImage(version)
 
+	labels["k8s-upgrade"] = "worker"
 	workerPlan := baseUpgradePlan(workerPlanName, drain, labels)
-	workerPlan.Labels["k8s-upgrade"] = "worker"
 	workerPlan.Spec.Concurrency = 1
 	workerPlan.Spec.NodeSelector = &metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{

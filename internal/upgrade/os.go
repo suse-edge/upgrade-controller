@@ -70,9 +70,9 @@ func OSUpgradeSecret(nameSuffix string, releaseOS *lifecyclev1alpha1.OperatingSy
 
 func OSControlPlanePlan(nameSuffix, releaseVersion, secretName string, releaseOS *lifecyclev1alpha1.OperatingSystem, drain bool, labels map[string]string) *upgradecattlev1.Plan {
 	controlPlanePlanName := osPlanName(controlPlaneKey, releaseOS.ZypperID, releaseOS.Version, nameSuffix)
-	controlPlanePlan := baseOSPlan(controlPlanePlanName, releaseVersion, secretName, drain, labels)
 
-	controlPlanePlan.Labels["os-upgrade"] = "control-plane"
+	labels["os-upgrade"] = "control-plane"
+	controlPlanePlan := baseOSPlan(controlPlanePlanName, releaseVersion, secretName, drain, labels)
 	controlPlanePlan.Spec.Concurrency = 1
 	controlPlanePlan.Spec.NodeSelector = &metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
@@ -111,10 +111,9 @@ func OSControlPlanePlan(nameSuffix, releaseVersion, secretName string, releaseOS
 
 func OSWorkerPlan(nameSuffix, releaseVersion, secretName string, releaseOS *lifecyclev1alpha1.OperatingSystem, drain bool, labels map[string]string) *upgradecattlev1.Plan {
 	workerPlanName := osPlanName(workersKey, releaseOS.ZypperID, releaseOS.Version, nameSuffix)
+
+	labels["os-upgrade"] = "worker"
 	workerPlan := baseOSPlan(workerPlanName, releaseVersion, secretName, drain, labels)
-
-	workerPlan.Labels["os-upgrade"] = "worker"
-
 	workerPlan.Spec.Concurrency = 2
 	workerPlan.Spec.NodeSelector = &metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
