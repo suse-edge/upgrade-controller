@@ -13,7 +13,8 @@ import (
 const (
 	PlanNameLabel      = "lifecycle.suse.com/upgrade-plan-name"
 	PlanNamespaceLabel = "lifecycle.suse.com/upgrade-plan-namespace"
-	ReleaseLabel       = "lifecycle.suse.com/release"
+
+	ReleaseAnnotation = "lifecycle.suse.com/release"
 
 	ControlPlaneLabel = "node-role.kubernetes.io/control-plane"
 

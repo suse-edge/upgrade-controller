@@ -90,9 +90,13 @@ func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan
 		chart.Labels = map[string]string{}
 	}
 
+	if chart.Annotations == nil {
+		chart.Annotations = map[string]string{}
+	}
+
 	chart.Labels[upgrade.PlanNameLabel] = upgradePlan.Name
 	chart.Labels[upgrade.PlanNamespaceLabel] = upgradePlan.Namespace
-	chart.Labels[upgrade.ReleaseLabel] = upgradePlan.Spec.ReleaseVersion
+	chart.Annotations[upgrade.ReleaseAnnotation] = upgradePlan.Spec.ReleaseVersion
 	chart.Spec.ChartContent = ""
 	chart.Spec.Chart = releaseChart.Name
 	chart.Spec.Version = releaseChart.Version
@@ -122,7 +126,9 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan
 	}
 
 	labels := upgrade.PlanIdentifierLabels(upgradePlan.Name, upgradePlan.Namespace)
-	labels[upgrade.ReleaseLabel] = upgradePlan.Spec.ReleaseVersion
+	annotations := map[string]string{
+		upgrade.ReleaseAnnotation: upgradePlan.Spec.ReleaseVersion,
+	}
 
 	chart := &helmcattlev1.HelmChart{
 		TypeMeta: metav1.TypeMeta{
@@ -130,9 +136,10 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan
 			APIVersion: "helm.cattle.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      installedChart.Name,
-			Namespace: upgrade.HelmChartNamespace,
-			Labels:    labels,
+			Name:        installedChart.Name,
+			Namespace:   upgrade.HelmChartNamespace,
+			Labels:      labels,
+			Annotations: annotations,
 		},
 		Spec: helmcattlev1.HelmChartSpec{
 			Chart:           releaseChart.Name,
@@ -243,7 +250,7 @@ func (r *UpgradePlanReconciler) upgradeHelmChart(ctx context.Context, upgradePla
 		return upgrade.ChartStateInProgress, r.updateHelmChart(ctx, upgradePlan, chart, releaseChart)
 	}
 
-	releaseVersion := chart.Labels[upgrade.ReleaseLabel]
+	releaseVersion := chart.Annotations[upgrade.ReleaseAnnotation]
 	if releaseVersion != upgradePlan.Spec.ReleaseVersion {
 		return upgrade.ChartStateVersionAlreadyInstalled, nil
 	}
