@@ -22,7 +22,6 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -215,7 +214,12 @@ func mergeMaps(m1, m2 map[string]any) map[string]any {
 	return out
 }
 
-func (r *UpgradePlanReconciler) upgradeHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, releaseChart *lifecyclev1alpha1.HelmChart) (upgrade.HelmChartState, error) {
+func (r *UpgradePlanReconciler) upgradeHelmChart(
+	ctx context.Context,
+	upgradePlan *lifecyclev1alpha1.UpgradePlan,
+	releaseChart *lifecyclev1alpha1.HelmChart,
+	chartResource *helmcattlev1.HelmChart,
+) (upgrade.HelmChartState, error) {
 	helmRelease, err := retrieveHelmRelease(releaseChart.ReleaseName)
 	if err != nil {
 		if errors.Is(err, helmdriver.ErrReleaseNotFound) {
@@ -224,13 +228,7 @@ func (r *UpgradePlanReconciler) upgradeHelmChart(ctx context.Context, upgradePla
 		return upgrade.ChartStateUnknown, fmt.Errorf("retrieving helm release: %w", err)
 	}
 
-	chart := &helmcattlev1.HelmChart{}
-
-	if err = r.Get(ctx, upgrade.ChartNamespacedName(helmRelease.Name), chart); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return upgrade.ChartStateUnknown, err
-		}
-
+	if chartResource == nil {
 		if helmRelease.Chart.Metadata.Version == releaseChart.Version {
 			return upgrade.ChartStateVersionAlreadyInstalled, nil
 		}
@@ -238,17 +236,17 @@ func (r *UpgradePlanReconciler) upgradeHelmChart(ctx context.Context, upgradePla
 		return upgrade.ChartStateInProgress, r.createHelmChart(ctx, upgradePlan, helmRelease, releaseChart)
 	}
 
-	if chart.Spec.Version != releaseChart.Version {
-		return upgrade.ChartStateInProgress, r.updateHelmChart(ctx, upgradePlan, chart, releaseChart)
+	if chartResource.Spec.Version != releaseChart.Version {
+		return upgrade.ChartStateInProgress, r.updateHelmChart(ctx, upgradePlan, chartResource, releaseChart)
 	}
 
-	releaseVersion := chart.Annotations[upgrade.ReleaseAnnotation]
+	releaseVersion := chartResource.Annotations[upgrade.ReleaseAnnotation]
 	if releaseVersion != upgradePlan.Spec.ReleaseVersion {
 		return upgrade.ChartStateVersionAlreadyInstalled, nil
 	}
 
 	job := &batchv1.Job{}
-	if err = r.Get(ctx, types.NamespacedName{Name: chart.Status.JobName, Namespace: upgrade.HelmChartNamespace}, job); err != nil {
+	if err = r.Get(ctx, types.NamespacedName{Name: chartResource.Status.JobName, Namespace: upgrade.HelmChartNamespace}, job); err != nil {
 		return upgrade.ChartStateUnknown, client.IgnoreNotFound(err)
 	}
 

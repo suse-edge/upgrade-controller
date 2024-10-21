@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	helmcattlev1 "github.com/k3s-io/helm-controller/pkg/apis/helm.cattle.io/v1"
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 	"github.com/suse-edge/upgrade-controller/internal/upgrade"
 	corev1 "k8s.io/api/core/v1"
@@ -11,11 +12,22 @@ import (
 )
 
 func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, chart *lifecyclev1alpha1.HelmChart) (ctrl.Result, error) {
+	chartResources := &helmcattlev1.HelmChartList{}
+
+	if err := r.List(ctx, chartResources); err != nil {
+		return ctrl.Result{}, fmt.Errorf("listing HelmChart resources: %w", err)
+	}
+
 	conditionType := lifecyclev1alpha1.GetChartConditionType(chart.PrettyName)
 
 	if len(chart.DependencyCharts) != 0 {
 		for _, depChart := range chart.DependencyCharts {
-			depState, err := r.upgradeHelmChart(ctx, upgradePlan, &depChart)
+			chartResource, err := findChartResource(chartResources, depChart.ReleaseName)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+
+			depState, err := r.upgradeHelmChart(ctx, upgradePlan, &depChart, chartResource)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
@@ -29,7 +41,12 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 		}
 	}
 
-	coreState, err := r.upgradeHelmChart(ctx, upgradePlan, chart)
+	chartResource, err := findChartResource(chartResources, chart.ReleaseName)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	coreState, err := r.upgradeHelmChart(ctx, upgradePlan, chart, chartResource)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -48,7 +65,12 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 
 	if len(chart.AddonCharts) != 0 {
 		for _, addonChart := range chart.AddonCharts {
-			addonState, err := r.upgradeHelmChart(ctx, upgradePlan, &addonChart)
+			chartResource, err = findChartResource(chartResources, addonChart.ReleaseName)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+
+			addonState, err := r.upgradeHelmChart(ctx, upgradePlan, &addonChart, chartResource)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
@@ -77,4 +99,23 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 	setCondition, requeue := evaluateHelmChartState(coreState)
 	setCondition(upgradePlan, conditionType, coreState.FormattedMessage(chart.ReleaseName))
 	return ctrl.Result{Requeue: requeue}, nil
+}
+
+func findChartResource(helmCharts *helmcattlev1.HelmChartList, name string) (*helmcattlev1.HelmChart, error) {
+	var charts []*helmcattlev1.HelmChart
+
+	for _, chart := range helmCharts.Items {
+		if chart.Name == name {
+			charts = append(charts, &chart)
+		}
+	}
+
+	switch len(charts) {
+	case 0:
+		return nil, nil
+	case 1:
+		return charts[0], nil
+	default:
+		return nil, fmt.Errorf("more than one HelmChart resource with name '%s' exists", name)
+	}
 }

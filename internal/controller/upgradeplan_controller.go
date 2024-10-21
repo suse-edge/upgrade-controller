@@ -356,7 +356,7 @@ func (r *UpgradePlanReconciler) findUpgradePlanFromJob(ctx context.Context, job 
 	}
 
 	helmChart := &helmcattlev1.HelmChart{}
-	if err := r.Get(ctx, upgrade.ChartNamespacedName(chartName), helmChart); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: chartName, Namespace: job.GetNamespace()}, helmChart); err != nil {
 		logger := log.FromContext(ctx)
 		logger.Error(err, "failed to get helm chart")
 

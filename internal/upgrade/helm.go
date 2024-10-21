@@ -2,16 +2,7 @@ package upgrade
 
 import (
 	"fmt"
-
-	"k8s.io/apimachinery/pkg/types"
 )
-
-func ChartNamespacedName(chart string) types.NamespacedName {
-	return types.NamespacedName{
-		Name:      chart,
-		Namespace: HelmChartNamespace,
-	}
-}
 
 type HelmChartState int
 
