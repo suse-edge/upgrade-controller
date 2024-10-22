@@ -102,11 +102,11 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 }
 
 func findChartResource(helmCharts *helmcattlev1.HelmChartList, name string) (*helmcattlev1.HelmChart, error) {
-	var charts []*helmcattlev1.HelmChart
+	var charts []helmcattlev1.HelmChart
 
 	for _, chart := range helmCharts.Items {
 		if chart.Name == name {
-			charts = append(charts, &chart)
+			charts = append(charts, chart)
 		}
 	}
 
@@ -114,7 +114,7 @@ func findChartResource(helmCharts *helmcattlev1.HelmChartList, name string) (*he
 	case 0:
 		return nil, nil
 	case 1:
-		return charts[0], nil
+		return &charts[0], nil
 	default:
 		return nil, fmt.Errorf("more than one HelmChart resource with name '%s' exists", name)
 	}
