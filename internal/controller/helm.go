@@ -230,7 +230,7 @@ func (r *UpgradePlanReconciler) upgradeHelmChart(
 
 	chartResource, err := findChartResource(chartResources, releaseChart.ReleaseName)
 	if err != nil {
-		return upgrade.ChartStateUnknown, fmt.Errorf("finding chart resource: %w", err)
+		return upgrade.ChartStateFailed, fmt.Errorf("finding chart resource: %w", err)
 	}
 
 	if chartResource == nil {
