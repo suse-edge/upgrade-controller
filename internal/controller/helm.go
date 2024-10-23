@@ -218,7 +218,7 @@ func (r *UpgradePlanReconciler) upgradeHelmChart(
 	ctx context.Context,
 	upgradePlan *lifecyclev1alpha1.UpgradePlan,
 	releaseChart *lifecyclev1alpha1.HelmChart,
-	chartResource *helmcattlev1.HelmChart,
+	chartResources *helmcattlev1.HelmChartList,
 ) (upgrade.HelmChartState, error) {
 	helmRelease, err := retrieveHelmRelease(releaseChart.ReleaseName)
 	if err != nil {
@@ -226,6 +226,11 @@ func (r *UpgradePlanReconciler) upgradeHelmChart(
 			return upgrade.ChartStateNotInstalled, nil
 		}
 		return upgrade.ChartStateUnknown, fmt.Errorf("retrieving helm release: %w", err)
+	}
+
+	chartResource, err := findChartResource(chartResources, releaseChart.ReleaseName)
+	if err != nil {
+		return upgrade.ChartStateUnknown, fmt.Errorf("finding chart resource: %w", err)
 	}
 
 	if chartResource == nil {
@@ -272,6 +277,25 @@ func (r *UpgradePlanReconciler) upgradeHelmChart(
 		"jobStatus", condition.Message)
 
 	return upgrade.ChartStateFailed, nil
+}
+
+func findChartResource(helmCharts *helmcattlev1.HelmChartList, name string) (*helmcattlev1.HelmChart, error) {
+	var charts []helmcattlev1.HelmChart
+
+	for _, chart := range helmCharts.Items {
+		if chart.Name == name {
+			charts = append(charts, chart)
+		}
+	}
+
+	switch len(charts) {
+	case 0:
+		return nil, nil
+	case 1:
+		return &charts[0], nil
+	default:
+		return nil, fmt.Errorf("more than one HelmChart resource with name '%s' exists", name)
+	}
 }
 
 func evaluateHelmChartState(state upgrade.HelmChartState) (setCondition setCondition, requeue bool) {

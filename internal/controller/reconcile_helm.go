@@ -22,12 +22,7 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 
 	if len(chart.DependencyCharts) != 0 {
 		for _, depChart := range chart.DependencyCharts {
-			chartResource, err := findChartResource(chartResources, depChart.ReleaseName)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
-
-			depState, err := r.upgradeHelmChart(ctx, upgradePlan, &depChart, chartResource)
+			depState, err := r.upgradeHelmChart(ctx, upgradePlan, &depChart, chartResources)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
@@ -41,12 +36,7 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 		}
 	}
 
-	chartResource, err := findChartResource(chartResources, chart.ReleaseName)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	coreState, err := r.upgradeHelmChart(ctx, upgradePlan, chart, chartResource)
+	coreState, err := r.upgradeHelmChart(ctx, upgradePlan, chart, chartResources)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -65,12 +55,7 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 
 	if len(chart.AddonCharts) != 0 {
 		for _, addonChart := range chart.AddonCharts {
-			chartResource, err = findChartResource(chartResources, addonChart.ReleaseName)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
-
-			addonState, err := r.upgradeHelmChart(ctx, upgradePlan, &addonChart, chartResource)
+			addonState, err := r.upgradeHelmChart(ctx, upgradePlan, &addonChart, chartResources)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
@@ -99,23 +84,4 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 	setCondition, requeue := evaluateHelmChartState(coreState)
 	setCondition(upgradePlan, conditionType, coreState.FormattedMessage(chart.ReleaseName))
 	return ctrl.Result{Requeue: requeue}, nil
-}
-
-func findChartResource(helmCharts *helmcattlev1.HelmChartList, name string) (*helmcattlev1.HelmChart, error) {
-	var charts []helmcattlev1.HelmChart
-
-	for _, chart := range helmCharts.Items {
-		if chart.Name == name {
-			charts = append(charts, chart)
-		}
-	}
-
-	switch len(charts) {
-	case 0:
-		return nil, nil
-	case 1:
-		return &charts[0], nil
-	default:
-		return nil, fmt.Errorf("more than one HelmChart resource with name '%s' exists", name)
-	}
 }
