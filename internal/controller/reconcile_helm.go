@@ -14,7 +14,7 @@ import (
 
 var (
 	errMultipleHelmChartResources   = fmt.Errorf("multiple HelmChart resources found")
-	multipleHelmChartsFailureReason = "Unable to upgrade Helm release backed by multiple HelmChart resources"
+	multipleHelmChartsFailureReason = "Unable to upgrade Helm release '%s' backed by multiple HelmChart resources"
 )
 
 func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, chart *lifecyclev1alpha1.HelmChart) (ctrl.Result, error) {
@@ -31,7 +31,7 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 			depState, err := r.upgradeHelmChart(ctx, upgradePlan, &depChart, chartResources)
 			if err != nil {
 				if errors.Is(err, errMultipleHelmChartResources) {
-					setFailedCondition(upgradePlan, conditionType, multipleHelmChartsFailureReason)
+					setFailedCondition(upgradePlan, conditionType, fmt.Sprintf(multipleHelmChartsFailureReason, depChart.ReleaseName))
 					return ctrl.Result{Requeue: true}, nil
 				}
 
@@ -50,7 +50,7 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 	coreState, err := r.upgradeHelmChart(ctx, upgradePlan, chart, chartResources)
 	if err != nil {
 		if errors.Is(err, errMultipleHelmChartResources) {
-			setFailedCondition(upgradePlan, conditionType, multipleHelmChartsFailureReason)
+			setFailedCondition(upgradePlan, conditionType, fmt.Sprintf(multipleHelmChartsFailureReason, chart.ReleaseName))
 			return ctrl.Result{Requeue: true}, nil
 		}
 
@@ -74,8 +74,9 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 			addonState, err := r.upgradeHelmChart(ctx, upgradePlan, &addonChart, chartResources)
 			if err != nil {
 				if errors.Is(err, errMultipleHelmChartResources) {
-					setFailedCondition(upgradePlan, conditionType, multipleHelmChartsFailureReason)
-					return ctrl.Result{Requeue: true}, nil
+					r.Recorder.Eventf(upgradePlan, corev1.EventTypeWarning, conditionType,
+						fmt.Sprintf(multipleHelmChartsFailureReason, addonChart.ReleaseName))
+					continue
 				}
 
 				return ctrl.Result{}, err
