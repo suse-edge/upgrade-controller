@@ -230,7 +230,7 @@ func (r *UpgradePlanReconciler) upgradeHelmChart(
 
 	chartResource, err := findChartResource(chartResources, releaseChart.ReleaseName)
 	if err != nil {
-		return upgrade.ChartStateFailed, fmt.Errorf("finding chart resource: %w", err)
+		return upgrade.ChartStateFailed, err
 	}
 
 	if chartResource == nil {
@@ -251,7 +251,7 @@ func (r *UpgradePlanReconciler) upgradeHelmChart(
 	}
 
 	job := &batchv1.Job{}
-	if err = r.Get(ctx, types.NamespacedName{Name: chartResource.Status.JobName, Namespace: upgrade.HelmChartNamespace}, job); err != nil {
+	if err = r.Get(ctx, types.NamespacedName{Name: chartResource.Status.JobName, Namespace: chartResource.Namespace}, job); err != nil {
 		return upgrade.ChartStateUnknown, client.IgnoreNotFound(err)
 	}
 
@@ -294,7 +294,7 @@ func findChartResource(helmCharts *helmcattlev1.HelmChartList, name string) (*he
 	case 1:
 		return &charts[0], nil
 	default:
-		return nil, fmt.Errorf("more than one HelmChart resource with name '%s' exists", name)
+		return nil, errMultipleHelmChartResources
 	}
 }
 

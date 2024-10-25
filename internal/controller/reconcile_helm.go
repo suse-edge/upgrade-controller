@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	helmcattlev1 "github.com/k3s-io/helm-controller/pkg/apis/helm.cattle.io/v1"
@@ -9,6 +10,11 @@ import (
 	"github.com/suse-edge/upgrade-controller/internal/upgrade"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
+)
+
+var (
+	errMultipleHelmChartResources   = fmt.Errorf("multiple HelmChart resources found")
+	multipleHelmChartsFailureReason = "Unable to upgrade Helm release backed by multiple HelmChart resources"
 )
 
 func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, chart *lifecyclev1alpha1.HelmChart) (ctrl.Result, error) {
@@ -24,6 +30,11 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 		for _, depChart := range chart.DependencyCharts {
 			depState, err := r.upgradeHelmChart(ctx, upgradePlan, &depChart, chartResources)
 			if err != nil {
+				if errors.Is(err, errMultipleHelmChartResources) {
+					setFailedCondition(upgradePlan, conditionType, multipleHelmChartsFailureReason)
+					return ctrl.Result{Requeue: true}, nil
+				}
+
 				return ctrl.Result{}, err
 			}
 
@@ -38,6 +49,11 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 
 	coreState, err := r.upgradeHelmChart(ctx, upgradePlan, chart, chartResources)
 	if err != nil {
+		if errors.Is(err, errMultipleHelmChartResources) {
+			setFailedCondition(upgradePlan, conditionType, multipleHelmChartsFailureReason)
+			return ctrl.Result{Requeue: true}, nil
+		}
+
 		return ctrl.Result{}, err
 	}
 
@@ -57,6 +73,11 @@ func (r *UpgradePlanReconciler) reconcileHelmChart(ctx context.Context, upgradeP
 		for _, addonChart := range chart.AddonCharts {
 			addonState, err := r.upgradeHelmChart(ctx, upgradePlan, &addonChart, chartResources)
 			if err != nil {
+				if errors.Is(err, errMultipleHelmChartResources) {
+					setFailedCondition(upgradePlan, conditionType, multipleHelmChartsFailureReason)
+					return ctrl.Result{Requeue: true}, nil
+				}
+
 				return ctrl.Result{}, err
 			}
 
