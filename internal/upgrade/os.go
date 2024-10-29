@@ -114,7 +114,7 @@ func OSWorkerPlan(nameSuffix, releaseVersion, secretName string, releaseOS *life
 
 	labels["os-upgrade"] = "worker"
 	workerPlan := baseOSPlan(workerPlanName, releaseVersion, secretName, drain, labels)
-	workerPlan.Spec.Concurrency = 2
+	workerPlan.Spec.Concurrency = 1
 	workerPlan.Spec.NodeSelector = &metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
 			{
