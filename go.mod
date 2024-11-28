@@ -5,7 +5,7 @@ go 1.22.0
 toolchain go1.22.5
 
 require (
-	github.com/k3s-io/helm-controller v0.16.4
+	github.com/k3s-io/helm-controller v0.16.5
 	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/onsi/gomega v1.34.2
 	github.com/rancher/system-upgrade-controller/pkg/apis v0.0.0-20240612205712-57605e3390c0
