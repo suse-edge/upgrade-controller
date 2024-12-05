@@ -69,6 +69,15 @@ func retrieveHelmRelease(name string) (*helmrelease.Release, error) {
 	return helmRelease, nil
 }
 
+func compareChartReleaseWithVersion(releaseName string, version string) (bool, error) {
+	helmRelease, err := retrieveHelmRelease(releaseName)
+	if err != nil {
+		return false, fmt.Errorf("retrieving helm release: %w", err)
+	}
+
+	return helmRelease.Chart.Metadata.Version == version, nil
+}
+
 // Updates an existing HelmChart resource in order to trigger an upgrade.
 func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, chart *helmcattlev1.HelmChart, releaseChart *lifecyclev1alpha1.HelmChart) error {
 	backoffLimit := int32(6)
