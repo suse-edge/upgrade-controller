@@ -3,15 +3,20 @@ package controller
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
+	helmcattlev1 "github.com/k3s-io/helm-controller/pkg/apis/helm.cattle.io/v1"
 	lifecyclev1alpha1 "github.com/suse-edge/upgrade-controller/api/v1alpha1"
 	"github.com/suse-edge/upgrade-controller/internal/upgrade"
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -52,6 +57,17 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(
 		setInProgressCondition(upgradePlan, conditionType, "Control plane nodes are being upgraded")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	} else if controlPlaneOnlyCluster(nodeList) {
+		allUpgraded, waitingFor, err := r.getK8sCoreComponentsUpgradeStatus(ctx, k8sDistro.CoreComponents)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		if !allUpgraded {
+			msg := fmt.Sprintf("Waiting for %s core component to be upgraded", waitingFor)
+			setInProgressCondition(upgradePlan, conditionType, msg)
+			return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
+		}
+
 		setSuccessfulCondition(upgradePlan, conditionType, "All cluster nodes are upgraded")
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -76,8 +92,79 @@ func (r *UpgradePlanReconciler) reconcileKubernetes(
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 
+	allUpgraded, waitingFor, err := r.getK8sCoreComponentsUpgradeStatus(ctx, k8sDistro.CoreComponents)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if !allUpgraded {
+		msg := fmt.Sprintf("Waiting for %s core component to be upgraded", waitingFor)
+		setInProgressCondition(upgradePlan, conditionType, msg)
+		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
+	}
+
 	setSuccessfulCondition(upgradePlan, conditionType, "All cluster nodes are upgraded")
 	return ctrl.Result{Requeue: true}, nil
+}
+
+func (r *UpgradePlanReconciler) getK8sCoreComponentsUpgradeStatus(ctx context.Context, core []lifecyclev1alpha1.CoreComponent) (allUpgraded bool, waitingFor string, err error) {
+	for _, component := range core {
+		upgraded, err := r.isK8sCoreComponentUpgraded(ctx, &component)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				// Not every component from the core list might be
+				// on every cluster.
+				continue
+			}
+			return false, "", fmt.Errorf("validating upgrade for component %s: %w", component.Name, err)
+		}
+
+		if !upgraded {
+			return false, component.Name, nil
+		}
+	}
+
+	return true, "", nil
+}
+
+func (r *UpgradePlanReconciler) isK8sCoreComponentUpgraded(ctx context.Context, component *lifecyclev1alpha1.CoreComponent) (bool, error) {
+	switch component.Type {
+	case lifecyclev1alpha1.HelmChartType:
+		chart := &helmcattlev1.HelmChart{}
+		if err := r.Get(ctx, upgrade.ChartNamespacedName(component.Name), chart); err != nil {
+			return false, fmt.Errorf("getting %s helm chart: %w", component.Name, err)
+		}
+
+		chartJob := &batchv1.Job{}
+		if err := r.Get(ctx, types.NamespacedName{Name: chart.Status.JobName, Namespace: chart.Namespace}, chartJob); err != nil {
+			return false, fmt.Errorf("getting %s helm chart job: %w", chart.Name, err)
+		}
+
+		isJobComplete := func(conditions []batchv1.JobCondition) bool {
+			return slices.ContainsFunc(conditions, func(condition batchv1.JobCondition) bool {
+				return condition.Status == corev1.ConditionTrue && condition.Type == batchv1.JobComplete
+			})
+		}
+
+		if !isJobComplete(chartJob.Status.Conditions) {
+			return false, nil
+		}
+
+		return compareChartReleaseWithVersion(chart.Name, component.Version)
+	case lifecyclev1alpha1.DeploymentType:
+		dep := &appsv1.Deployment{}
+		if err := r.Get(ctx, types.NamespacedName{Name: component.Name, Namespace: upgrade.KubeSystemNamespace}, dep); err != nil {
+			return false, fmt.Errorf("getting %s deployment: %w", component.Name, err)
+		}
+
+		if dep.Status.Replicas != dep.Status.ReadyReplicas {
+			return false, nil
+		}
+
+		return upgrade.ContainsContainerImages(dep.Spec.Template.Spec.Containers, component.ConvertContainerSliceToMap(), false), nil
+	default:
+		return false, fmt.Errorf("unsupported component type: %s", component.Type)
+	}
 }
 
 func targetKubernetesDistribution(nodeList *corev1.NodeList, kubernetes *lifecyclev1alpha1.Kubernetes) (*lifecyclev1alpha1.KubernetesDistribution, error) {
