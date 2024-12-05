@@ -6,7 +6,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// ContainsContainerImages validates that a given map of "container: image" refereces
+// ContainsContainerImages validates that a given map of "container: image" references
 // exist in a slice of corev1.Containers.
 //
 // Returns 'true' only if all the "container: image" references from the 'contains' map
@@ -17,7 +17,7 @@ import (
 //
 // If 'strict' is false, will require for the corev1.Container.Image to contain the image string defined
 // in the 'contains' map. Useful for use-cases where the image registry may change
-// based on the environment (e.g. private regisrty).
+// based on the environment (e.g. private registry).
 func ContainsContainerImages(containers []corev1.Container, contains map[string]string, strict bool) bool {
 	foundContainers := 0
 	for _, container := range containers {
