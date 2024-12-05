@@ -43,6 +43,35 @@ spec:
                     properties:
                       k3s:
                         properties:
+                          coreComponents:
+                            items:
+                              properties:
+                                containers:
+                                  items:
+                                    properties:
+                                      image:
+                                        type: string
+                                      name:
+                                        type: string
+                                    required:
+                                    - image
+                                    - name
+                                    type: object
+                                  type: array
+                                name:
+                                  type: string
+                                type:
+                                  enum:
+                                  - HelmChart
+                                  - Deployment
+                                  type: string
+                                version:
+                                  type: string
+                              required:
+                              - name
+                              - type
+                              type: object
+                            type: array
                           version:
                             type: string
                         required:
@@ -50,6 +79,35 @@ spec:
                         type: object
                       rke2:
                         properties:
+                          coreComponents:
+                            items:
+                              properties:
+                                containers:
+                                  items:
+                                    properties:
+                                      image:
+                                        type: string
+                                      name:
+                                        type: string
+                                    required:
+                                    - image
+                                    - name
+                                    type: object
+                                  type: array
+                                name:
+                                  type: string
+                                type:
+                                  enum:
+                                  - HelmChart
+                                  - Deployment
+                                  type: string
+                                version:
+                                  type: string
+                              required:
+                              - name
+                              - type
+                              type: object
+                            type: array
                           version:
                             type: string
                         required:
