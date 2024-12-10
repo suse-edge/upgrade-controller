@@ -9,7 +9,7 @@ import (
 func ChartNamespacedName(chart string) types.NamespacedName {
 	return types.NamespacedName{
 		Name:      chart,
-		Namespace: HelmChartNamespace,
+		Namespace: KubeSystemNamespace,
 	}
 }
 

@@ -212,7 +212,7 @@ func TestControlPlaneOnlyCluster(t *testing.T) {
 	}))
 }
 
-func TestTargetKubernetesVersion(t *testing.T) {
+func TestTargetKubernetesDistribution(t *testing.T) {
 	kubernetes := &lifecyclev1alpha1.Kubernetes{
 		K3S: lifecyclev1alpha1.KubernetesDistribution{
 			Version: "v1.30.3+k3s1",
@@ -223,49 +223,49 @@ func TestTargetKubernetesVersion(t *testing.T) {
 	}
 
 	tests := []struct {
-		name            string
-		nodes           *corev1.NodeList
-		expectedVersion string
-		expectedError   string
+		name                 string
+		nodes                *corev1.NodeList
+		expectedDistribution *lifecyclev1alpha1.KubernetesDistribution
+		expectedError        string
 	}{
 		{
 			name:          "Empty node list",
 			nodes:         &corev1.NodeList{},
-			expectedError: "unable to determine current kubernetes version due to empty node list",
+			expectedError: "unable to determine current kubernetes distribution due to empty node list",
 		},
 		{
-			name: "Unsupported Kubernetes version",
+			name: "Unsupported Kubernetes distribution",
 			nodes: &corev1.NodeList{
 				Items: []corev1.Node{{Status: corev1.NodeStatus{NodeInfo: corev1.NodeSystemInfo{KubeletVersion: "v1.30.3"}}}},
 			},
-			expectedError: "upgrading from kubernetes version v1.30.3 is not supported",
+			expectedError: "unsupported kubernetes distribution detected in version v1.30.3",
 		},
 		{
-			name: "Target k3s version",
+			name: "Target k3s distribution",
 			nodes: &corev1.NodeList{
 				Items: []corev1.Node{{Status: corev1.NodeStatus{NodeInfo: corev1.NodeSystemInfo{KubeletVersion: "v1.28.12+k3s1"}}}},
 			},
-			expectedVersion: "v1.30.3+k3s1",
+			expectedDistribution: &kubernetes.K3S,
 		},
 		{
-			name: "Target RKE2 version",
+			name: "Target RKE2 distribution",
 			nodes: &corev1.NodeList{
 				Items: []corev1.Node{{Status: corev1.NodeStatus{NodeInfo: corev1.NodeSystemInfo{KubeletVersion: "v1.28.12+rke2r1"}}}},
 			},
-			expectedVersion: "v1.30.3+rke2r1",
+			expectedDistribution: &kubernetes.RKE2,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			version, err := targetKubernetesVersion(test.nodes, kubernetes)
+			k8sDistro, err := targetKubernetesDistribution(test.nodes, kubernetes)
 			if test.expectedError != "" {
 				require.Error(t, err)
 				assert.EqualError(t, err, test.expectedError)
-				assert.Empty(t, version)
+				assert.Nil(t, k8sDistro)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, test.expectedVersion, version)
+				assert.Equal(t, test.expectedDistribution, k8sDistro)
 			}
 		})
 	}

@@ -96,7 +96,37 @@ type Kubernetes struct {
 }
 
 type KubernetesDistribution struct {
-	Version string `json:"version"`
+	Version        string          `json:"version"`
+	CoreComponents []CoreComponent `json:"coreComponents,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=HelmChart;Deployment
+type CoreComponentType string
+
+const (
+	HelmChartType  CoreComponentType = "HelmChart"
+	DeploymentType CoreComponentType = "Deployment"
+)
+
+type CoreComponent struct {
+	Name       string                   `json:"name"`
+	Version    string                   `json:"version,omitempty"`
+	Containers []CoreComponentContainer `json:"containers,omitempty"`
+	Type       CoreComponentType        `json:"type"`
+}
+
+func (c *CoreComponent) ConvertContainerSliceToMap() map[string]string {
+	containerMap := map[string]string{}
+	for _, container := range c.Containers {
+		containerMap[container.Name] = container.Image
+	}
+
+	return containerMap
+}
+
+type CoreComponentContainer struct {
+	Name  string `json:"name"`
+	Image string `json:"image"`
 }
 
 type OperatingSystem struct {

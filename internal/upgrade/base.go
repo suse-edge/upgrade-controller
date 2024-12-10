@@ -18,8 +18,8 @@ const (
 
 	ControlPlaneLabel = "node-role.kubernetes.io/control-plane"
 
-	HelmChartNamespace = "kube-system"
-	SUCNamespace       = "cattle-system"
+	KubeSystemNamespace = "kube-system"
+	SUCNamespace        = "cattle-system"
 
 	controlPlaneKey = "control-plane"
 	workersKey      = "workers"
