@@ -128,9 +128,9 @@ func main() {
 	var watchNamespaces map[string]cache.Config
 	if watchNamespace != "" {
 		watchNamespaces = map[string]cache.Config{
-			watchNamespace:             {},
-			upgrade.HelmChartNamespace: {},
-			upgrade.SUCNamespace:       {},
+			watchNamespace:              {},
+			upgrade.KubeSystemNamespace: {},
+			upgrade.SUCNamespace:        {},
 		}
 	}
 
