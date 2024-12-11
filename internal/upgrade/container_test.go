@@ -99,7 +99,7 @@ func getDefaultContainerImageTests() []ContainersImageTest {
 			ExpectedResult: false,
 		},
 		{
-			Name: "Matching container image without sidecar injection",
+			Name: "Matching container image without additional images",
 			Containers: []corev1.Container{
 				{
 					Name:  "coredns",
@@ -112,7 +112,7 @@ func getDefaultContainerImageTests() []ContainersImageTest {
 			ExpectedResult: true,
 		},
 		{
-			Name: "Matching container image with sidecar injection",
+			Name: "Matching container image with additional images",
 			Containers: []corev1.Container{
 				{
 					Name:  "coredns",

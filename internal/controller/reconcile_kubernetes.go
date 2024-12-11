@@ -137,7 +137,7 @@ func (r *UpgradePlanReconciler) isK8sCoreComponentUpgraded(ctx context.Context, 
 
 		chartJob := &batchv1.Job{}
 		if err := r.Get(ctx, types.NamespacedName{Name: chart.Status.JobName, Namespace: chart.Namespace}, chartJob); err != nil {
-			// If the HelmChart exists it must have a Job attatched to it.
+			// If the HelmChart exists it must have a Job attached to it.
 			// If the Job is missing, this indicates a recreate of the Job has been issued
 			// which can take some time on slower machines.
 			return false, client.IgnoreNotFound(err)
