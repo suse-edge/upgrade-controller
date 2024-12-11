@@ -9,12 +9,12 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-func TestPlanIdentifierAnnotations(t *testing.T) {
-	annotations := PlanIdentifierAnnotations("upgrade-plan-1", "upgrade-controller-system")
-	require.Len(t, annotations, 2)
+func TestPlanIdentifierLabels(t *testing.T) {
+	labels := PlanIdentifierLabels("upgrade-plan-1", "upgrade-controller-system")
+	require.Len(t, labels, 2)
 
-	assert.Equal(t, "upgrade-plan-1", annotations["lifecycle.suse.com/upgrade-plan-name"])
-	assert.Equal(t, "upgrade-controller-system", annotations["lifecycle.suse.com/upgrade-plan-namespace"])
+	assert.Equal(t, "upgrade-plan-1", labels["lifecycle.suse.com/upgrade-plan-name"])
+	assert.Equal(t, "upgrade-controller-system", labels["lifecycle.suse.com/upgrade-plan-namespace"])
 }
 
 func TestGenerateSuffix(t *testing.T) {
@@ -35,7 +35,7 @@ func TestBaseUpgradePlan_DrainEnabled(t *testing.T) {
 
 	assert.Equal(t, "upgrade-plan-1", upgradePlan.ObjectMeta.Name)
 	assert.Equal(t, "cattle-system", upgradePlan.ObjectMeta.Namespace)
-	assert.Nil(t, upgradePlan.ObjectMeta.Annotations)
+	assert.Nil(t, upgradePlan.ObjectMeta.Labels)
 
 	assert.Equal(t, "system-upgrade-controller", upgradePlan.Spec.ServiceAccountName)
 	assert.Nil(t, upgradePlan.Spec.Drain)
@@ -49,7 +49,7 @@ func TestBaseUpgradePlan_DrainDisabled(t *testing.T) {
 
 	assert.Equal(t, "upgrade-plan-1", upgradePlan.ObjectMeta.Name)
 	assert.Equal(t, "cattle-system", upgradePlan.ObjectMeta.Namespace)
-	assert.Nil(t, upgradePlan.ObjectMeta.Annotations)
+	assert.Nil(t, upgradePlan.ObjectMeta.Labels)
 
 	assert.Equal(t, "system-upgrade-controller", upgradePlan.Spec.ServiceAccountName)
 	require.NotNil(t, upgradePlan.Spec.Drain)

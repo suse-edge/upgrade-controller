@@ -20,11 +20,11 @@ func TestOSUpgradeSecret(t *testing.T) {
 		ZypperID:  "SL-Micro",
 		CPEScheme: "some-cpe-scheme",
 	}
-	annotations := map[string]string{
+	labels := map[string]string{
 		"lifecycle.suse.com/x": "z",
 	}
 
-	secret, err := OSUpgradeSecret(planNameSuffix, os, annotations)
+	secret, err := OSUpgradeSecret(planNameSuffix, os, labels)
 	require.NoError(t, err)
 
 	assert.Equal(t, "Secret", secret.TypeMeta.Kind)
@@ -32,7 +32,7 @@ func TestOSUpgradeSecret(t *testing.T) {
 
 	assert.Equal(t, "os-upgrade-secret-sl-micro-6-0-abcdef", secret.ObjectMeta.Name)
 	assert.Equal(t, "cattle-system", secret.ObjectMeta.Namespace)
-	assert.Equal(t, annotations, secret.ObjectMeta.Annotations)
+	assert.Equal(t, labels, secret.ObjectMeta.Labels)
 
 	assert.EqualValues(t, "Opaque", secret.Type)
 
@@ -50,11 +50,16 @@ func TestOSControlPlanePlan(t *testing.T) {
 		Version:  "6.0",
 		ZypperID: "SL-Micro",
 	}
-	annotations := map[string]string{
+	addLabels := map[string]string{
 		"lifecycle.suse.com/x": "z",
 	}
 
-	upgradePlan := OSControlPlanePlan(planNameSuffix, releaseVersion, secretName, os, false, annotations)
+	expectedLabels := map[string]string{
+		"lifecycle.suse.com/x": "z",
+		"os-upgrade":           "control-plane",
+	}
+
+	upgradePlan := OSControlPlanePlan(planNameSuffix, releaseVersion, secretName, os, false, addLabels)
 	require.NotNil(t, upgradePlan)
 
 	assert.Equal(t, "Plan", upgradePlan.TypeMeta.Kind)
@@ -62,9 +67,7 @@ func TestOSControlPlanePlan(t *testing.T) {
 
 	assert.Equal(t, "control-plane-sl-micro-6-0-abcdef", upgradePlan.ObjectMeta.Name)
 	assert.Equal(t, "cattle-system", upgradePlan.ObjectMeta.Namespace)
-	assert.Equal(t, annotations, upgradePlan.ObjectMeta.Annotations)
-	require.Len(t, upgradePlan.ObjectMeta.Labels, 1)
-	assert.Equal(t, "control-plane", upgradePlan.ObjectMeta.Labels["os-upgrade"])
+	assert.Equal(t, expectedLabels, upgradePlan.ObjectMeta.Labels)
 
 	require.Len(t, upgradePlan.Spec.NodeSelector.MatchLabels, 0)
 	require.Len(t, upgradePlan.Spec.NodeSelector.MatchExpressions, 1)
@@ -119,11 +122,16 @@ func TestOSWorkerPlan(t *testing.T) {
 		Version:  "6.0",
 		ZypperID: "SL-Micro",
 	}
-	annotations := map[string]string{
+	addLabels := map[string]string{
 		"lifecycle.suse.com/x": "z",
 	}
 
-	upgradePlan := OSWorkerPlan(planNameSuffix, releaseVersion, secretName, os, false, annotations)
+	expectedLabels := map[string]string{
+		"lifecycle.suse.com/x": "z",
+		"os-upgrade":           "worker",
+	}
+
+	upgradePlan := OSWorkerPlan(planNameSuffix, releaseVersion, secretName, os, false, addLabels)
 	require.NotNil(t, upgradePlan)
 
 	assert.Equal(t, "Plan", upgradePlan.TypeMeta.Kind)
@@ -131,9 +139,7 @@ func TestOSWorkerPlan(t *testing.T) {
 
 	assert.Equal(t, "workers-sl-micro-6-0-abcdef", upgradePlan.ObjectMeta.Name)
 	assert.Equal(t, "cattle-system", upgradePlan.ObjectMeta.Namespace)
-	assert.Equal(t, annotations, upgradePlan.ObjectMeta.Annotations)
-	require.Len(t, upgradePlan.ObjectMeta.Labels, 1)
-	assert.Equal(t, "worker", upgradePlan.ObjectMeta.Labels["os-upgrade"])
+	assert.Equal(t, expectedLabels, upgradePlan.ObjectMeta.Labels)
 
 	require.Len(t, upgradePlan.Spec.NodeSelector.MatchLabels, 0)
 	require.Len(t, upgradePlan.Spec.NodeSelector.MatchExpressions, 1)
@@ -152,7 +158,7 @@ func TestOSWorkerPlan(t *testing.T) {
 	assert.Equal(t, []string{"sh", "/run/system-upgrade/secrets/some-secret/os-upgrade.sh"}, upgradeContainer.Args)
 
 	assert.Equal(t, "3.1.0", upgradePlan.Spec.Version)
-	assert.EqualValues(t, 2, upgradePlan.Spec.Concurrency)
+	assert.EqualValues(t, 1, upgradePlan.Spec.Concurrency)
 	assert.EqualValues(t, 43200, upgradePlan.Spec.JobActiveDeadlineSecs)
 	assert.True(t, upgradePlan.Spec.Cordon)
 

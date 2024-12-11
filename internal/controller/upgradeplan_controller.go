@@ -64,6 +64,7 @@ type UpgradePlanReconciler struct {
 // +kubebuilder:rbac:groups=upgrade.cattle.io,resources=plans,verbs=create;list;get;watch;delete
 // +kubebuilder:rbac:groups="",resources=nodes,verbs=watch;list
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;delete;create;watch
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create
 // +kubebuilder:rbac:groups=batch,resources=jobs/status,verbs=get
@@ -116,20 +117,22 @@ func (r *UpgradePlanReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 }
 
 func (r *UpgradePlanReconciler) reconcileDelete(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan) error {
-	sucPlans := &upgradecattlev1.PlanList{}
+	labelSelector := client.MatchingLabels{
+		upgrade.PlanNameLabel:      upgradePlan.Name,
+		upgrade.PlanNamespaceLabel: upgradePlan.Namespace,
+	}
 
-	if err := r.List(ctx, sucPlans, &client.ListOptions{
+	listOpts := &client.ListOptions{
 		Namespace: upgrade.SUCNamespace,
-	}); err != nil {
+	}
+	labelSelector.ApplyToList(listOpts)
+
+	sucPlans := &upgradecattlev1.PlanList{}
+	if err := r.List(ctx, sucPlans, listOpts); err != nil {
 		return fmt.Errorf("retrieving SUC plans: %w", err)
 	}
 
 	for _, plan := range sucPlans.Items {
-		if plan.Annotations[upgrade.PlanNameAnnotation] != upgradePlan.Name ||
-			plan.Annotations[upgrade.PlanNamespaceAnnotation] != upgradePlan.Namespace {
-			continue
-		}
-
 		if len(plan.Status.Applying) != 0 {
 			return errUpgradeInProgress
 		}
@@ -140,19 +143,11 @@ func (r *UpgradePlanReconciler) reconcileDelete(ctx context.Context, upgradePlan
 	}
 
 	secrets := &corev1.SecretList{}
-
-	if err := r.List(ctx, secrets, &client.ListOptions{
-		Namespace: upgrade.SUCNamespace,
-	}); err != nil {
+	if err := r.List(ctx, secrets, listOpts); err != nil {
 		return fmt.Errorf("retrieving SUC secrets: %w", err)
 	}
 
 	for _, secret := range secrets.Items {
-		if secret.Annotations[upgrade.PlanNameAnnotation] != upgradePlan.Name ||
-			secret.Annotations[upgrade.PlanNamespaceAnnotation] != upgradePlan.Namespace {
-			continue
-		}
-
 		if err := r.Delete(ctx, &secret); err != nil {
 			return fmt.Errorf("deleting SUC secret %s: %w", secret.Name, err)
 		}
@@ -343,7 +338,7 @@ func setSkippedCondition(plan *lifecyclev1alpha1.UpgradePlan, conditionType, mes
 
 func (r *UpgradePlanReconciler) findUpgradePlanFromJob(ctx context.Context, job client.Object) []reconcile.Request {
 	// Check whether the Job was created by the Upgrade Controller first
-	requests := r.findUpgradePlanFromAnnotations(ctx, job)
+	requests := r.findUpgradePlanFromLabel(ctx, job)
 	if len(requests) != 0 {
 		return requests
 	}
@@ -363,19 +358,19 @@ func (r *UpgradePlanReconciler) findUpgradePlanFromJob(ctx context.Context, job 
 		return []reconcile.Request{}
 	}
 
-	return r.findUpgradePlanFromAnnotations(ctx, helmChart)
+	return r.findUpgradePlanFromLabel(ctx, helmChart)
 }
 
-func (r *UpgradePlanReconciler) findUpgradePlanFromAnnotations(_ context.Context, object client.Object) []reconcile.Request {
-	annotations := object.GetAnnotations()
+func (r *UpgradePlanReconciler) findUpgradePlanFromLabel(_ context.Context, object client.Object) []reconcile.Request {
+	labels := object.GetLabels()
 
-	planName, ok := annotations[upgrade.PlanNameAnnotation]
+	planName, ok := labels[upgrade.PlanNameLabel]
 	if !ok || planName == "" {
 		// Object is not managed by the Upgrade controller.
 		return []reconcile.Request{}
 	}
 
-	planNamespace := annotations[upgrade.PlanNamespaceAnnotation]
+	planNamespace := labels[upgrade.PlanNamespaceLabel]
 
 	return []reconcile.Request{
 		{NamespacedName: types.NamespacedName{Namespace: planNamespace, Name: planName}},
@@ -398,7 +393,7 @@ func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&lifecyclev1alpha1.UpgradePlan{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&upgradecattlev1.Plan{}, handler.EnqueueRequestsFromMapFunc(r.findUpgradePlanFromAnnotations), builder.WithPredicates(predicate.Funcs{
+		Watches(&upgradecattlev1.Plan{}, handler.EnqueueRequestsFromMapFunc(r.findUpgradePlanFromLabel), builder.WithPredicates(predicate.Funcs{
 			CreateFunc: func(e event.CreateEvent) bool {
 				return false
 			},
@@ -436,7 +431,7 @@ func (r *UpgradePlanReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return false
 			},
 		})).
-		Watches(&corev1.Secret{}, handler.EnqueueRequestsFromMapFunc(r.findUpgradePlanFromAnnotations), builder.WithPredicates(predicate.Funcs{
+		Watches(&corev1.Secret{}, handler.EnqueueRequestsFromMapFunc(r.findUpgradePlanFromLabel), builder.WithPredicates(predicate.Funcs{
 			DeleteFunc: func(e event.DeleteEvent) bool {
 				return false
 			},

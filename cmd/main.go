@@ -128,9 +128,9 @@ func main() {
 	var watchNamespaces map[string]cache.Config
 	if watchNamespace != "" {
 		watchNamespaces = map[string]cache.Config{
-			watchNamespace:             {},
-			upgrade.HelmChartNamespace: {},
-			upgrade.SUCNamespace:       {},
+			watchNamespace:              {},
+			upgrade.KubeSystemNamespace: {},
+			upgrade.SUCNamespace:        {},
 		}
 	}
 
@@ -190,7 +190,7 @@ func main() {
 		os.Exit(1)
 	}
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err = (&lifecyclev1alpha1.UpgradePlan{}).SetupWebhookWithManager(mgr); err != nil {
+		if err = lifecyclev1alpha1.SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "UpgradePlan")
 			os.Exit(1)
 		}

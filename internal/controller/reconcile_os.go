@@ -9,8 +9,6 @@ import (
 	"github.com/suse-edge/upgrade-controller/internal/upgrade"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -22,10 +20,10 @@ func (r *UpgradePlanReconciler) reconcileOS(
 	releaseOS *lifecyclev1alpha1.OperatingSystem,
 	nodeList *corev1.NodeList,
 ) (ctrl.Result, error) {
-	identifierAnnotations := upgrade.PlanIdentifierAnnotations(upgradePlan.Name, upgradePlan.Namespace)
+	identifierLabels := upgrade.PlanIdentifierLabels(upgradePlan.Name, upgradePlan.Namespace)
 	nameSuffix := upgradePlan.Status.SUCNameSuffix
 
-	secret, err := upgrade.OSUpgradeSecret(nameSuffix, releaseOS, identifierAnnotations)
+	secret, err := upgrade.OSUpgradeSecret(nameSuffix, releaseOS, identifierLabels)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("generating OS upgrade secret: %w", err)
 	}
@@ -41,7 +39,7 @@ func (r *UpgradePlanReconciler) reconcileOS(
 	conditionType := lifecyclev1alpha1.OperatingSystemUpgradedCondition
 
 	drainControlPlane, drainWorker := parseDrainOptions(nodeList, upgradePlan)
-	controlPlanePlan := upgrade.OSControlPlanePlan(nameSuffix, releaseVersion, secret.Name, releaseOS, drainControlPlane, identifierAnnotations)
+	controlPlanePlan := upgrade.OSControlPlanePlan(nameSuffix, releaseVersion, secret.Name, releaseOS, drainControlPlane, identifierLabels)
 	if err = r.Get(ctx, client.ObjectKeyFromObject(controlPlanePlan), controlPlanePlan); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
@@ -51,12 +49,12 @@ func (r *UpgradePlanReconciler) reconcileOS(
 		return ctrl.Result{}, r.createObject(ctx, upgradePlan, controlPlanePlan)
 	}
 
-	selector, err := metav1.LabelSelectorAsSelector(controlPlanePlan.Spec.NodeSelector)
+	nodes, err := findMatchingNodes(nodeList, controlPlanePlan.Spec.NodeSelector)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("parsing node selector: %w", err)
+		return ctrl.Result{}, err
 	}
 
-	if !isOSUpgraded(nodeList, selector, releaseOS.PrettyName) {
+	if !isOSUpgraded(nodes, releaseOS.PrettyName) {
 		setInProgressCondition(upgradePlan, conditionType, "Control plane nodes are being upgraded")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	} else if controlPlaneOnlyCluster(nodeList) {
@@ -64,7 +62,7 @@ func (r *UpgradePlanReconciler) reconcileOS(
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	workerPlan := upgrade.OSWorkerPlan(nameSuffix, releaseVersion, secret.Name, releaseOS, drainWorker, identifierAnnotations)
+	workerPlan := upgrade.OSWorkerPlan(nameSuffix, releaseVersion, secret.Name, releaseOS, drainWorker, identifierLabels)
 	if err = r.Get(ctx, client.ObjectKeyFromObject(workerPlan), workerPlan); err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
@@ -74,12 +72,12 @@ func (r *UpgradePlanReconciler) reconcileOS(
 		return ctrl.Result{}, r.createObject(ctx, upgradePlan, workerPlan)
 	}
 
-	selector, err = metav1.LabelSelectorAsSelector(workerPlan.Spec.NodeSelector)
+	nodes, err = findMatchingNodes(nodeList, workerPlan.Spec.NodeSelector)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("parsing node selector: %w", err)
+		return ctrl.Result{}, err
 	}
 
-	if !isOSUpgraded(nodeList, selector, releaseOS.PrettyName) {
+	if !isOSUpgraded(nodes, releaseOS.PrettyName) {
 		setInProgressCondition(upgradePlan, conditionType, "Worker nodes are being upgraded")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
@@ -88,12 +86,8 @@ func (r *UpgradePlanReconciler) reconcileOS(
 	return ctrl.Result{Requeue: true}, nil
 }
 
-func isOSUpgraded(nodeList *corev1.NodeList, selector labels.Selector, osPrettyName string) bool {
-	for _, node := range nodeList.Items {
-		if !selector.Matches(labels.Set(node.Labels)) {
-			continue
-		}
-
+func isOSUpgraded(nodes []corev1.Node, osPrettyName string) bool {
+	for _, node := range nodes {
 		var nodeReadyStatus corev1.ConditionStatus
 
 		for _, condition := range node.Status.Conditions {

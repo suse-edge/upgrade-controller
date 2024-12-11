@@ -69,6 +69,15 @@ func retrieveHelmRelease(name string) (*helmrelease.Release, error) {
 	return helmRelease, nil
 }
 
+func compareChartReleaseWithVersion(releaseName string, version string) (bool, error) {
+	helmRelease, err := retrieveHelmRelease(releaseName)
+	if err != nil {
+		return false, fmt.Errorf("retrieving helm release: %w", err)
+	}
+
+	return helmRelease.Chart.Metadata.Version == version, nil
+}
+
 // Updates an existing HelmChart resource in order to trigger an upgrade.
 func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan *lifecyclev1alpha1.UpgradePlan, chart *helmcattlev1.HelmChart, releaseChart *lifecyclev1alpha1.HelmChart) error {
 	backoffLimit := int32(6)
@@ -86,11 +95,16 @@ func (r *UpgradePlanReconciler) updateHelmChart(ctx context.Context, upgradePlan
 		return fmt.Errorf("merging chart values: %w", err)
 	}
 
+	if chart.Labels == nil {
+		chart.Labels = map[string]string{}
+	}
+
 	if chart.Annotations == nil {
 		chart.Annotations = map[string]string{}
 	}
-	chart.Annotations[upgrade.PlanNameAnnotation] = upgradePlan.Name
-	chart.Annotations[upgrade.PlanNamespaceAnnotation] = upgradePlan.Namespace
+
+	chart.Labels[upgrade.PlanNameLabel] = upgradePlan.Name
+	chart.Labels[upgrade.PlanNamespaceLabel] = upgradePlan.Namespace
 	chart.Annotations[upgrade.ReleaseAnnotation] = upgradePlan.Spec.ReleaseVersion
 	chart.Spec.ChartContent = ""
 	chart.Spec.Chart = releaseChart.Name
@@ -120,8 +134,10 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan
 		return fmt.Errorf("merging chart values: %w", err)
 	}
 
-	annotations := upgrade.PlanIdentifierAnnotations(upgradePlan.Name, upgradePlan.Namespace)
-	annotations[upgrade.ReleaseAnnotation] = upgradePlan.Spec.ReleaseVersion
+	labels := upgrade.PlanIdentifierLabels(upgradePlan.Name, upgradePlan.Namespace)
+	annotations := map[string]string{
+		upgrade.ReleaseAnnotation: upgradePlan.Spec.ReleaseVersion,
+	}
 
 	chart := &helmcattlev1.HelmChart{
 		TypeMeta: metav1.TypeMeta{
@@ -130,7 +146,8 @@ func (r *UpgradePlanReconciler) createHelmChart(ctx context.Context, upgradePlan
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        installedChart.Name,
-			Namespace:   upgrade.HelmChartNamespace,
+			Namespace:   upgrade.KubeSystemNamespace,
+			Labels:      labels,
 			Annotations: annotations,
 		},
 		Spec: helmcattlev1.HelmChartSpec{
@@ -248,7 +265,7 @@ func (r *UpgradePlanReconciler) upgradeHelmChart(ctx context.Context, upgradePla
 	}
 
 	job := &batchv1.Job{}
-	if err = r.Get(ctx, types.NamespacedName{Name: chart.Status.JobName, Namespace: upgrade.HelmChartNamespace}, job); err != nil {
+	if err = r.Get(ctx, types.NamespacedName{Name: chart.Status.JobName, Namespace: upgrade.KubeSystemNamespace}, job); err != nil {
 		return upgrade.ChartStateUnknown, client.IgnoreNotFound(err)
 	}
 

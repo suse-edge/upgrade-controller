@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	"fmt"
 	"slices"
 
@@ -27,10 +28,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-// SetupWebhookWithManager will setup the manager to manage the webhooks
-func (r *UpgradePlan) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+		WithValidator(&UpgradePlanValidator{}).
+		For(&UpgradePlan{}).
 		Complete()
 }
 
@@ -38,36 +39,46 @@ func (r *UpgradePlan) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // Modifying the path for an invalid path can cause API server errors; failing to locate the webhook.
 // +kubebuilder:webhook:path=/validate-lifecycle-suse-com-v1alpha1-upgradeplan,mutating=false,failurePolicy=fail,sideEffects=None,groups=lifecycle.suse.com,resources=upgradeplans,verbs=create;update,versions=v1alpha1,name=vupgradeplan.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Validator = &UpgradePlan{}
+var _ webhook.CustomValidator = &UpgradePlanValidator{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *UpgradePlan) ValidateCreate() (admission.Warnings, error) {
-	_, err := validateReleaseVersion(r.Spec.ReleaseVersion)
+type UpgradePlanValidator struct{}
+
+func (*UpgradePlanValidator) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
+	upgradePlan, ok := obj.(*UpgradePlan)
+	if !ok {
+		return nil, fmt.Errorf("unexpected object type: %T", obj)
+	}
+
+	_, err := validateReleaseVersion(upgradePlan.Spec.ReleaseVersion)
 	return nil, err
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *UpgradePlan) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
+func (*UpgradePlanValidator) ValidateUpdate(ctx context.Context, old, new runtime.Object) (admission.Warnings, error) {
 	oldPlan, ok := old.(*UpgradePlan)
 	if !ok {
 		return nil, fmt.Errorf("unexpected object type: %T", old)
 	}
 
+	newPlan, ok := new.(*UpgradePlan)
+	if !ok {
+		return nil, fmt.Errorf("unexpected object type: %T", new)
+	}
+
 	// deletion is scheduled, but not yet finished and controller has updated the plan
 	// with the removed finalizers
-	if !r.ObjectMeta.DeletionTimestamp.IsZero() && len(r.Finalizers) < len(oldPlan.Finalizers) {
+	if !newPlan.ObjectMeta.DeletionTimestamp.IsZero() && len(newPlan.Finalizers) < len(oldPlan.Finalizers) {
 		return nil, nil
 	}
 
 	disallowingUpdateStates := []string{UpgradeInProgress, UpgradePending, UpgradeError}
 
-	for _, condition := range r.Status.Conditions {
+	for _, condition := range newPlan.Status.Conditions {
 		if slices.Contains(disallowingUpdateStates, condition.Reason) {
 			return nil, fmt.Errorf("upgrade plan cannot be edited while condition '%s' is in '%s' state", condition.Type, condition.Reason)
 		}
 	}
 
-	newReleaseVersion, err := validateReleaseVersion(r.Spec.ReleaseVersion)
+	newReleaseVersion, err := validateReleaseVersion(newPlan.Spec.ReleaseVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +91,7 @@ func (r *UpgradePlan) ValidateUpdate(old runtime.Object) (admission.Warnings, er
 
 		switch indicator {
 		case 0:
-			return nil, fmt.Errorf("any edits over '%s' must come with an increment of the releaseVersion", r.Name)
+			return nil, fmt.Errorf("any edits over '%s' must come with an increment of the releaseVersion", newPlan.Name)
 		case -1:
 			return nil, fmt.Errorf("new releaseVersion must be greater than the currently applied one ('%s')", oldPlan.Status.LastSuccessfulReleaseVersion)
 		}
@@ -89,8 +100,7 @@ func (r *UpgradePlan) ValidateUpdate(old runtime.Object) (admission.Warnings, er
 	return nil, nil
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *UpgradePlan) ValidateDelete() (admission.Warnings, error) {
+func (*UpgradePlanValidator) ValidateDelete(context.Context, runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
