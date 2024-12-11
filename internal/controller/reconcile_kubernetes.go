@@ -160,7 +160,13 @@ func (r *UpgradePlanReconciler) isK8sCoreComponentUpgraded(ctx context.Context, 
 			return false, fmt.Errorf("getting %s deployment: %w", component.Name, err)
 		}
 
-		if dep.Status.Replicas != dep.Status.ReadyReplicas {
+		isDeploymentAvailable := func(conditions []appsv1.DeploymentCondition) bool {
+			return slices.ContainsFunc(conditions, func(condition appsv1.DeploymentCondition) bool {
+				return condition.Status == corev1.ConditionTrue && condition.Type == appsv1.DeploymentAvailable
+			})
+		}
+
+		if !isDeploymentAvailable(dep.Status.Conditions) {
 			return false, nil
 		}
 
