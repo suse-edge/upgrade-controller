@@ -41,7 +41,7 @@ func TestOSUpgradeSecret(t *testing.T) {
 	require.NotEmpty(t, scriptContents)
 
 	assert.Contains(t, scriptContents, "RELEASE_CPE=some-cpe-scheme")
-	assert.Contains(t, scriptContents, "/usr/sbin/transactional-update --continue run zypper migration --gpg-auto-import-keys --non-interactive --product SL-Micro/6.0/${SYSTEM_ARCH} --root /")
+	assert.Contains(t, scriptContents, "/usr/sbin/transactional-update --continue migration --gpg-auto-import-keys --non-interactive --product SL-Micro/6.0/${SYSTEM_ARCH}")
 }
 
 func TestOSControlPlanePlan(t *testing.T) {

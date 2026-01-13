@@ -35,7 +35,7 @@ executeUpgrade(){
     else
         # Migration if the CPEs are different
         PKG_UPDATE_CMD="ExecStart=/usr/sbin/transactional-update cleanup up"
-        MIGRATION_CMD="ExecStart=/usr/sbin/transactional-update --continue run zypper migration --gpg-auto-import-keys --non-interactive --product {{.ZypperID}}/{{.Version}}/${SYSTEM_ARCH} --root /"
+        MIGRATION_CMD="ExecStart=/usr/sbin/transactional-update --continue migration --gpg-auto-import-keys --non-interactive --product {{.ZypperID}}/{{.Version}}/${SYSTEM_ARCH}"
 
         EXEC_START=$(echo -e "${PKG_UPDATE_CMD}\n${MIGRATION_CMD}")
         SERVICE_NAME="os-migration.service"
