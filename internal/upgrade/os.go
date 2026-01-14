@@ -148,7 +148,8 @@ func baseOSPlan(planName, releaseVersion, secretName string, drain bool, labels 
 	baseOSplan.Spec.Cordon = true
 	baseOSplan.Spec.Version = releaseVersion
 
-	baseOSplan.Spec.JobActiveDeadlineSecs = 43200
+	deadlineSecs := int64(43200)
+	baseOSplan.Spec.JobActiveDeadlineSecs = &deadlineSecs
 
 	baseOSplan.Spec.Upgrade = &upgradecattlev1.ContainerSpec{
 		Image:   planImage,
