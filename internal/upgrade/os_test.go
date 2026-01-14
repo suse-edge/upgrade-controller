@@ -87,7 +87,7 @@ func TestOSControlPlanePlan(t *testing.T) {
 
 	assert.Equal(t, "3.1.0", upgradePlan.Spec.Version)
 	assert.EqualValues(t, 1, upgradePlan.Spec.Concurrency)
-	assert.EqualValues(t, 43200, upgradePlan.Spec.JobActiveDeadlineSecs)
+	assert.EqualValues(t, 43200, *upgradePlan.Spec.JobActiveDeadlineSecs)
 	assert.True(t, upgradePlan.Spec.Cordon)
 
 	assert.Equal(t, "system-upgrade-controller", upgradePlan.Spec.ServiceAccountName)
@@ -159,7 +159,7 @@ func TestOSWorkerPlan(t *testing.T) {
 
 	assert.Equal(t, "3.1.0", upgradePlan.Spec.Version)
 	assert.EqualValues(t, 1, upgradePlan.Spec.Concurrency)
-	assert.EqualValues(t, 43200, upgradePlan.Spec.JobActiveDeadlineSecs)
+	assert.EqualValues(t, 43200, *upgradePlan.Spec.JobActiveDeadlineSecs)
 	assert.True(t, upgradePlan.Spec.Cordon)
 
 	assert.Equal(t, "system-upgrade-controller", upgradePlan.Spec.ServiceAccountName)

@@ -2,10 +2,10 @@ package upgrade
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 )
 
@@ -56,5 +56,5 @@ func TestBaseUpgradePlan_DrainDisabled(t *testing.T) {
 	assert.True(t, upgradePlan.Spec.Drain.Force)
 	assert.Equal(t, ptr.To(true), upgradePlan.Spec.Drain.DeleteEmptydirData)
 	assert.Equal(t, ptr.To(true), upgradePlan.Spec.Drain.IgnoreDaemonSets)
-	assert.Equal(t, ptr.To(15*time.Minute), upgradePlan.Spec.Drain.Timeout)
+	assert.Equal(t, ptr.To(intstr.FromString("15m")), upgradePlan.Spec.Drain.Timeout)
 }
