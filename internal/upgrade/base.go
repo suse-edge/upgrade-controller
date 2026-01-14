@@ -4,10 +4,10 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"time"
 
 	upgradecattlev1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 const (
@@ -66,7 +66,7 @@ func baseUpgradePlan(name string, drain bool, labels map[string]string) *upgrade
 	}
 
 	if drain {
-		timeout := 15 * time.Minute
+		timeout := intstr.FromString("15m")
 		deleteEmptyDirData := true
 		ignoreDaemonSets := true
 		plan.Spec.Drain = &upgradecattlev1.DrainSpec{
