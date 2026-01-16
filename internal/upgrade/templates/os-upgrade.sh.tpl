@@ -57,6 +57,9 @@ After=network.target
 
 [Service]
 Type=oneshot
+TimeoutStartSec=4h
+Restart=on-failure
+RestartSec=60
 IOSchedulingClass=best-effort
 IOSchedulingPriority=7
 ${EXEC_START}
