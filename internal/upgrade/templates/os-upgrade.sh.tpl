@@ -15,8 +15,19 @@ if [ -f ${OS_UPGRADED_PLACEHOLDER_PATH} ]; then
 fi
 
 cleanupService(){
-    rm ${1}
-    systemctl daemon-reload
+	local unit_path="$1"
+    local unit_name="$(basename "$unit_path")"
+
+	# Best effort to stop the service if it has not already finished.
+	# Covers scenarios where the script is abruptly stopped.
+	systemctl stop "$unit_name" >/dev/null 2>&1 || true
+	# Stopping a oneshot service mid-run causes it to go in a "failed" state,
+	# make sure we clear this state, as it can cause collisions with further
+	# runs that try to start the service.
+	systemctl reset-failed "$unit_name" >/dev/null 2>&1 || true
+
+	rm -f "$unit_path"
+	systemctl daemon-reload >/dev/null 2>&1 || true
 }
 
 executeUpgrade(){
