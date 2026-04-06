@@ -8,7 +8,7 @@ Use the following diagram to familiarize yourself with the internals around the 
 ![workflow](workflow-diagram.png)
 
 ## Prerequisites
-- Go version v1.22.0+
+- Go version v1.25.0+
 - Docker version 17.03+.
 - kubectl version v1.28+.
 - Access to a Kubernetes v1.30+ cluster running:
